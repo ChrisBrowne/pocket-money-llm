@@ -25,3 +25,7 @@
 | [0021](0021-parent-is-session-identity.md) | Parent is session identity, not a stored entity | Accepted |
 | [0022](0022-database-path-env-var.md) | Database file path via DATABASE_PATH env var | Accepted |
 | [0023](0023-zod-schema-for-backup-format.md) | Zod schema as the backup format contract | Accepted |
+| [0024](0024-remove-rename-child.md) | Remove rename child feature | Accepted |
+| [0025](0025-record-acting-parent-on-transactions.md) | Record acting parent email on transactions | Accepted |
+| [0026](0026-separate-auth-middleware.md) | Separate auth middleware for UI and backup API | Accepted |
+| [0027](0027-env-var-catalogue.md) | Environment variable catalogue and .env.example | Accepted |

@@ -47,6 +47,7 @@ value TransactionSnapshot {
     amount: Pence
     note: String
     recorded_at: Timestamp
+    recorded_by: String                            -- email of the acting parent
 }
 
 ------------------------------------------------------------
@@ -70,6 +71,7 @@ entity Transaction {
     amount: Pence
     note: String
     recorded_at: Timestamp
+    recorded_by: String                            -- email of the acting parent (from Session)
 }
 
 @guidance TransactionImmutability
@@ -82,9 +84,18 @@ entity Transaction {
 ------------------------------------------------------------
 
 config {
-    default_note: String = "weekly pocket money"
-    allowed_emails: Set<String>
+    -- All values provided via environment variables (ADR-0018).
+    -- See .env.example for the full list with descriptions.
+
+    allowed_emails: Set<String>                 -- env: ALLOWED_EMAILS (comma-separated)
     database_path: String                       -- env: DATABASE_PATH, required, no default
+    cookie_secret: String                       -- env: COOKIE_SECRET, signs session cookies (ADR-0016)
+    backup_api_key: String                      -- env: BACKUP_API_KEY, authenticates cron job (ADR-0017)
+    google_client_id: String                    -- env: GOOGLE_CLIENT_ID
+    google_client_secret: String                -- env: GOOGLE_CLIENT_SECRET
+    google_redirect_uri: String                 -- env: GOOGLE_REDIRECT_URI, Tailscale hostname (ADR-0009)
+    port: Integer = 3000                        -- env: PORT
+    default_note: String = "weekly pocket money" -- env: DEFAULT_NOTE
 }
 
 ------------------------------------------------------------
@@ -124,13 +135,6 @@ rule RemoveChild {
     ensures: not exists child
 }
 
-rule RenameChild {
-    when: ParentRenamesChild(session, child, new_name)
-    requires: session.email in config.allowed_emails
-    requires: not exists Child{name: new_name}
-    ensures: child.name = new_name
-}
-
 rule Deposit {
     when: ParentDeposits(session, child, amount, note)
     requires: session.email in config.allowed_emails
@@ -140,7 +144,8 @@ rule Deposit {
         kind: deposit,
         amount: amount,
         note: note,
-        recorded_at: now
+        recorded_at: now,
+        recorded_by: session.email
     )
 }
 
@@ -153,7 +158,8 @@ rule Withdraw {
         kind: withdrawal,
         amount: amount,
         note: note,
-        recorded_at: now
+        recorded_at: now,
+        recorded_by: session.email
     )
 }
 
@@ -187,7 +193,8 @@ rule RestoreBackup {
                 kind: t.kind,
                 amount: t.amount,
                 note: t.note,
-                recorded_at: t.recorded_at
+                recorded_at: t.recorded_at,
+                recorded_by: t.recorded_by
             )
 
     @guidance
@@ -226,12 +233,14 @@ actor AuthorisedParent {
 }
 
 actor BackupAgent {
-    identified_by: Session where email in config.allowed_emails
+    identified_by: config.backup_api_key via Authorization header
 
     @guarantee ApiKeyAuth
-        -- Requests must carry a valid API key in the Authorization header.
-        -- The key is a static secret shared between the app and the cron job
-        -- (see ADR-0017). This is separate from cookie-based session auth.
+        -- Requests must carry a valid API key in the Authorization header
+        -- (e.g. "Bearer <key>"). The key is a static secret shared between
+        -- the app and the cron job (see ADR-0017).
+        -- This is entirely separate from cookie-based session auth —
+        -- backup API routes use their own middleware (ADR-0026).
 }
 
 ------------------------------------------------------------
@@ -250,8 +259,17 @@ surface Home {
     provides:
         ParentAddsChild(viewer, name)
         ParentExportsBackup(viewer)              -- browser download: "pocket-money-YYYY-MM-DDTHH-MM-SS.json"
-        ParentRestoresBackup(viewer, backup)
+        ParentRestoresBackup(viewer, backup)     -- two-step: upload → confirm (see guidance)
         ParentLogsOut(viewer.session)
+
+    @guidance RestoreConfirmation
+        -- Restore is destructive — it wipes all existing data (ADR-0003).
+        -- The UI must present a two-step confirmation flow:
+        --   1. Parent uploads backup file → app parses and shows a summary
+        --      (number of children, number of transactions, export date)
+        --   2. Parent explicitly confirms → restore executes
+        -- If parsing fails (invalid format, Zod rejection), show an error
+        -- and do not proceed to the confirmation step.
 
     related:
         for child in Children:
@@ -270,27 +288,33 @@ surface ChildDetail {
     exposes:
         child.name
         child.balance
-        for t in child.transactions:
+        for t in child.transactions order by recorded_at descending:
             t.kind
             t.amount
             t.note
             t.recorded_at
+            t.recorded_by
 
     provides:
         ParentDeposits(viewer, child, amount, note default config.default_note)
         ParentWithdraws(viewer, child, amount, note default config.default_note)
-        ParentRenamesChild(viewer, child, new_name)
         ParentRemovesChild(viewer, child)
+
+    @guidance
+        -- Transactions are displayed newest-first (reverse chronological).
+        -- All transactions are shown — no pagination in v1.
 }
 
 surface BackupApi {
     facing agent: BackupAgent
 
     provides:
-        ParentExportsBackup(agent)
+        ExportBackup(agent)
 
     @guidance
         -- Returns BackupData as JSON.
         -- The cron job saves the response to the network share
         -- with a datetime-stamped filename.
+        -- Auth is via API key in Authorization header, not session cookie.
+        -- Served under a separate route group with API-key middleware (ADR-0026).
 }

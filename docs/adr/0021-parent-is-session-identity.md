@@ -31,4 +31,4 @@ Actor declarations (`AuthorisedParent`, `BackupAgent`) now reference `Session` i
 - The session cookie stores both email and name, signed with the cookie secret (ADR-0016)
 - The parent's display name is populated at login from the Google OAuth profile and persists for the session lifetime
 - If Google profile names change, the app picks it up on next login — no stale data
-- Adding a "who did this" audit trail to transactions would mean storing the session email on each transaction — not needed now, but straightforward to add later
+- Each transaction records the acting parent's email for audit purposes (ADR-0025)
