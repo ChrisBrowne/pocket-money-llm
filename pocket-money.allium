@@ -20,7 +20,7 @@ value ChildSnapshot {
 value TransactionSnapshot {
     child_name: String
     kind: deposit | withdrawal
-    amount: Decimal
+    amount: Integer
     note: String
     recorded_at: Timestamp
 }
@@ -48,7 +48,7 @@ entity Child {
 entity Transaction {
     child: Child
     kind: deposit | withdrawal
-    amount: Decimal
+    amount: Integer
     note: String
     recorded_at: Timestamp
 }
@@ -81,6 +81,7 @@ rule AllowAuthorisedLogin {
 rule AddChild {
     when: ParentAddsChild(parent, name)
     requires: parent.email in config.allowed_emails
+    requires: not exists Child{name: name}
     ensures: Child.created(name: name, created_at: now)
 }
 
@@ -96,6 +97,7 @@ rule RemoveChild {
 rule RenameChild {
     when: ParentRenamesChild(parent, child, new_name)
     requires: parent.email in config.allowed_emails
+    requires: not exists Child{name: new_name}
     ensures: child.name = new_name
 }
 
@@ -171,6 +173,12 @@ invariant PositiveTransactionAmount {
 invariant OnlyAllowedParents {
     for p in Parents:
         p.email in config.allowed_emails
+}
+
+invariant UniqueChildNames {
+    for a in Children:
+        for b in Children:
+            a = b or a.name != b.name
 }
 
 ------------------------------------------------------------

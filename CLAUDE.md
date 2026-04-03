@@ -73,9 +73,13 @@ Functions and data, not class hierarchies. No inheritance. Compose through funct
 
 ### Colocation Over Abstraction
 
-Keep related code together. Organise by feature, not by layer. Some duplication is preferable to indirection that forces jumping between files to follow the flow. Three similar lines of code is better than one clever abstraction.
+Keep related code together. Some duplication is preferable to indirection that forces jumping between files to follow the flow. Three similar lines of code is better than one clever abstraction.
 
 Don't introduce abstractions (repositories, service layers, helper modules) until concrete evidence demands it. Premature abstraction is a code smell equal to duplication.
+
+### Organise by Feature, Not by Layer
+
+Code is organised into feature directories (e.g. `children/`, `transactions/`, `backup/`), not by technical role (`handlers/`, `controllers/`, `domain/`). Each feature contains its handler, command handler, domain functions, and views together. A developer working on a feature should find everything they need in one place.
 
 ### Testing
 

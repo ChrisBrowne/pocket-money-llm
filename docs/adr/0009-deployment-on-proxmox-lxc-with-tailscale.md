@@ -12,3 +12,4 @@
 - The LXC gets Tailscale installed and a stable MagicDNS name
 - SQLite DB lives local to the LXC filesystem; JSON exports go to a network-mounted share from the Windows host (Backblaze-backed)
 - The custom `.brownehq/` hostname works for bookmarks and casual access but is not used in OAuth configuration
+- See ADR-0019 for process management (systemd) and deployment mechanism (git pull)
