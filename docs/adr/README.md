@@ -21,3 +21,7 @@
 | [0017](0017-api-key-for-backup-cron.md) | API key for backup cron authentication | Accepted |
 | [0018](0018-config-via-env-vars.md) | Configuration via environment variables | Accepted |
 | [0019](0019-deployment-systemd-git-pull.md) | Deployment via systemd and git pull | Accepted |
+| [0020](0020-transaction-immutability.md) | Transaction immutability — corrections via offsetting | Accepted |
+| [0021](0021-parent-is-session-identity.md) | Parent is session identity, not a stored entity | Accepted |
+| [0022](0022-database-path-env-var.md) | Database file path via DATABASE_PATH env var | Accepted |
+| [0023](0023-zod-schema-for-backup-format.md) | Zod schema as the backup format contract | Accepted |

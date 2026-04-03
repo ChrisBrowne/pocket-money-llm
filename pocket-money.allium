@@ -6,21 +6,45 @@
 -- Value Types
 ------------------------------------------------------------
 
+value ChildName : String {
+    -- Trimmed on input; must be non-empty after trimming
+    normalise: trim
+    requires: length > 0
+}
+
+value Pence : Integer {
+    -- Positive amount in pence. £5.00 = 500 pence.
+    -- Display formatting (pence → "£X.XX") is a view-layer concern only.
+    requires: this > 0
+}
+
+value Session {
+    -- Not a stored entity. Populated from Google OAuth profile data
+    -- and held in a signed HTTP-only cookie (see ADR-0016).
+    email: String
+    name: String
+}
+
 value BackupData {
     children: List<ChildSnapshot>
     transactions: List<TransactionSnapshot>
     exported_at: Timestamp
+
+    @guidance
+        -- The canonical format contract is a strict Zod schema (ADR-0023).
+        -- Both export (serialization) and restore (parsing) go through it.
+        -- No .passthrough() — extra fields are rejected on import.
 }
 
 value ChildSnapshot {
-    name: String
+    name: ChildName
     created_at: Timestamp
 }
 
 value TransactionSnapshot {
-    child_name: String
+    child_name: ChildName
     kind: deposit | withdrawal
-    amount: Integer
+    amount: Pence
     note: String
     recorded_at: Timestamp
 }
@@ -29,13 +53,8 @@ value TransactionSnapshot {
 -- Entities
 ------------------------------------------------------------
 
-entity Parent {
-    email: String
-    name: String
-}
-
 entity Child {
-    name: String
+    name: ChildName
     created_at: Timestamp
 
     -- Relationships
@@ -48,10 +67,15 @@ entity Child {
 entity Transaction {
     child: Child
     kind: deposit | withdrawal
-    amount: Integer
+    amount: Pence
     note: String
     recorded_at: Timestamp
 }
+
+@guidance TransactionImmutability
+    -- Transactions are append-only. There is no edit or delete for individual
+    -- transactions. Mistakes are corrected by adding an offsetting transaction
+    -- with an explanatory note (e.g. deposit to reverse an erroneous withdrawal).
 
 ------------------------------------------------------------
 -- Config
@@ -60,6 +84,7 @@ entity Transaction {
 config {
     default_note: String = "weekly pocket money"
     allowed_emails: Set<String>
+    database_path: String                       -- env: DATABASE_PATH, required, no default
 }
 
 ------------------------------------------------------------
@@ -73,21 +98,26 @@ rule RejectUnauthorisedLogin {
 }
 
 rule AllowAuthorisedLogin {
-    when: GoogleAuthCallback(email)
+    when: GoogleAuthCallback(email, name)
     requires: email in config.allowed_emails
-    ensures: SessionCreated(email)
+    ensures: SessionCreated(email: email, name: name)
+}
+
+rule Logout {
+    when: ParentLogsOut(session)
+    ensures: SessionDestroyed(session)
 }
 
 rule AddChild {
-    when: ParentAddsChild(parent, name)
-    requires: parent.email in config.allowed_emails
+    when: ParentAddsChild(session, name)
+    requires: session.email in config.allowed_emails
     requires: not exists Child{name: name}
     ensures: Child.created(name: name, created_at: now)
 }
 
 rule RemoveChild {
-    when: ParentRemovesChild(parent, child)
-    requires: parent.email in config.allowed_emails
+    when: ParentRemovesChild(session, child)
+    requires: session.email in config.allowed_emails
     ensures:
         for t in child.transactions:
             not exists t
@@ -95,15 +125,15 @@ rule RemoveChild {
 }
 
 rule RenameChild {
-    when: ParentRenamesChild(parent, child, new_name)
-    requires: parent.email in config.allowed_emails
+    when: ParentRenamesChild(session, child, new_name)
+    requires: session.email in config.allowed_emails
     requires: not exists Child{name: new_name}
     ensures: child.name = new_name
 }
 
 rule Deposit {
-    when: ParentDeposits(parent, child, amount, note)
-    requires: parent.email in config.allowed_emails
+    when: ParentDeposits(session, child, amount, note)
+    requires: session.email in config.allowed_emails
     requires: amount > 0
     ensures: Transaction.created(
         child: child,
@@ -115,8 +145,8 @@ rule Deposit {
 }
 
 rule Withdraw {
-    when: ParentWithdraws(parent, child, amount, note)
-    requires: parent.email in config.allowed_emails
+    when: ParentWithdraws(session, child, amount, note)
+    requires: session.email in config.allowed_emails
     requires: amount > 0
     ensures: Transaction.created(
         child: child,
@@ -128,8 +158,8 @@ rule Withdraw {
 }
 
 rule ExportBackup {
-    when: ParentExportsBackup(parent)
-    requires: parent.email in config.allowed_emails
+    when: ParentExportsBackup(session)
+    requires: session.email in config.allowed_emails
     ensures: BackupProduced(
         children: Children,
         transactions: Transactions,
@@ -138,8 +168,8 @@ rule ExportBackup {
 }
 
 rule RestoreBackup {
-    when: ParentRestoresBackup(parent, backup)
-    requires: parent.email in config.allowed_emails
+    when: ParentRestoresBackup(session, backup)
+    requires: session.email in config.allowed_emails
     ensures:
         for t in Transactions:
             not exists t
@@ -159,6 +189,11 @@ rule RestoreBackup {
                 note: t.note,
                 recorded_at: t.recorded_at
             )
+
+    @guidance
+        -- Restore is destructive: all existing data is wiped before import.
+        -- This is intentional — restore means "replace with this snapshot",
+        -- not "merge with current state".
 }
 
 ------------------------------------------------------------
@@ -168,11 +203,6 @@ rule RestoreBackup {
 invariant PositiveTransactionAmount {
     for t in Transactions:
         t.amount > 0
-}
-
-invariant OnlyAllowedParents {
-    for p in Parents:
-        p.email in config.allowed_emails
 }
 
 invariant UniqueChildNames {
@@ -186,11 +216,22 @@ invariant UniqueChildNames {
 ------------------------------------------------------------
 
 actor AuthorisedParent {
-    identified_by: Parent where email in config.allowed_emails
+    identified_by: Session where email in config.allowed_emails
+
+    @guarantee CookieAuth
+        -- Every request must carry a valid signed session cookie.
+        -- Middleware verifies the signature and checks the email
+        -- against config.allowed_emails before any handler runs.
+        -- Requests without a valid session redirect to Google login.
 }
 
 actor BackupAgent {
-    identified_by: Parent where email in config.allowed_emails
+    identified_by: Session where email in config.allowed_emails
+
+    @guarantee ApiKeyAuth
+        -- Requests must carry a valid API key in the Authorization header.
+        -- The key is a static secret shared between the app and the cron job
+        -- (see ADR-0017). This is separate from cookie-based session auth.
 }
 
 ------------------------------------------------------------
@@ -201,18 +242,24 @@ surface Home {
     facing viewer: AuthorisedParent
 
     exposes:
+        viewer.name
         for child in Children:
             child.name
             child.balance
 
     provides:
         ParentAddsChild(viewer, name)
-        ParentExportsBackup(viewer)
+        ParentExportsBackup(viewer)              -- browser download: "pocket-money-YYYY-MM-DDTHH-MM-SS.json"
         ParentRestoresBackup(viewer, backup)
+        ParentLogsOut(viewer.session)
 
     related:
         for child in Children:
             ChildDetail(child)
+
+    @guidance
+        -- Balances are displayed as formatted currency (e.g. "£5.00"),
+        -- not raw pence. Formatting is a view-layer concern.
 }
 
 surface ChildDetail {
@@ -230,8 +277,8 @@ surface ChildDetail {
             t.recorded_at
 
     provides:
-        ParentDeposits(viewer, child, amount, note)
-        ParentWithdraws(viewer, child, amount, note)
+        ParentDeposits(viewer, child, amount, note default config.default_note)
+        ParentWithdraws(viewer, child, amount, note default config.default_note)
         ParentRenamesChild(viewer, child, new_name)
         ParentRemovesChild(viewer, child)
 }
@@ -242,13 +289,8 @@ surface BackupApi {
     provides:
         ParentExportsBackup(agent)
 
-    @guarantee AuthenticatedOnly
-        -- Requests must carry a valid session for an authorised parent.
-        -- The external cron job authenticates as a parent before calling export.
-
     @guidance
         -- Returns BackupData as JSON.
         -- The cron job saves the response to the network share
         -- with a datetime-stamped filename.
 }
-
