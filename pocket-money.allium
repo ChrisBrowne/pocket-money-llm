@@ -1,0 +1,246 @@
+-- allium: 2
+-- Pocket Money Tracker
+-- Domain specification for tracking children's pocket money balances
+
+------------------------------------------------------------
+-- Value Types
+------------------------------------------------------------
+
+value BackupData {
+    children: List<ChildSnapshot>
+    transactions: List<TransactionSnapshot>
+    exported_at: Timestamp
+}
+
+value ChildSnapshot {
+    name: String
+    created_at: Timestamp
+}
+
+value TransactionSnapshot {
+    child_name: String
+    kind: deposit | withdrawal
+    amount: Decimal
+    note: String
+    recorded_at: Timestamp
+}
+
+------------------------------------------------------------
+-- Entities
+------------------------------------------------------------
+
+entity Parent {
+    email: String
+    name: String
+}
+
+entity Child {
+    name: String
+    created_at: Timestamp
+
+    -- Relationships
+    transactions: Transaction with child = this
+
+    -- Derived
+    balance: transactions.sum(t => if t.kind = deposit: t.amount else: -t.amount)
+}
+
+entity Transaction {
+    child: Child
+    kind: deposit | withdrawal
+    amount: Decimal
+    note: String
+    recorded_at: Timestamp
+}
+
+------------------------------------------------------------
+-- Config
+------------------------------------------------------------
+
+config {
+    default_note: String = "weekly pocket money"
+    allowed_emails: Set<String>
+}
+
+------------------------------------------------------------
+-- Rules
+------------------------------------------------------------
+
+rule RejectUnauthorisedLogin {
+    when: GoogleAuthCallback(email)
+    requires: email not in config.allowed_emails
+    ensures: LoginRejected(email)
+}
+
+rule AllowAuthorisedLogin {
+    when: GoogleAuthCallback(email)
+    requires: email in config.allowed_emails
+    ensures: SessionCreated(email)
+}
+
+rule AddChild {
+    when: ParentAddsChild(parent, name)
+    requires: parent.email in config.allowed_emails
+    ensures: Child.created(name: name, created_at: now)
+}
+
+rule RemoveChild {
+    when: ParentRemovesChild(parent, child)
+    requires: parent.email in config.allowed_emails
+    ensures:
+        for t in child.transactions:
+            not exists t
+    ensures: not exists child
+}
+
+rule RenameChild {
+    when: ParentRenamesChild(parent, child, new_name)
+    requires: parent.email in config.allowed_emails
+    ensures: child.name = new_name
+}
+
+rule Deposit {
+    when: ParentDeposits(parent, child, amount, note)
+    requires: parent.email in config.allowed_emails
+    requires: amount > 0
+    ensures: Transaction.created(
+        child: child,
+        kind: deposit,
+        amount: amount,
+        note: note,
+        recorded_at: now
+    )
+}
+
+rule Withdraw {
+    when: ParentWithdraws(parent, child, amount, note)
+    requires: parent.email in config.allowed_emails
+    requires: amount > 0
+    ensures: Transaction.created(
+        child: child,
+        kind: withdrawal,
+        amount: amount,
+        note: note,
+        recorded_at: now
+    )
+}
+
+rule ExportBackup {
+    when: ParentExportsBackup(parent)
+    requires: parent.email in config.allowed_emails
+    ensures: BackupProduced(
+        children: Children,
+        transactions: Transactions,
+        exported_at: now
+    )
+}
+
+rule RestoreBackup {
+    when: ParentRestoresBackup(parent, backup)
+    requires: parent.email in config.allowed_emails
+    ensures:
+        for t in Transactions:
+            not exists t
+    ensures:
+        for c in Children:
+            not exists c
+    ensures:
+        for c in backup.children:
+            Child.created(name: c.name, created_at: c.created_at)
+    ensures:
+        for t in backup.transactions:
+            let child = Child{name: t.child_name}
+            Transaction.created(
+                child: child,
+                kind: t.kind,
+                amount: t.amount,
+                note: t.note,
+                recorded_at: t.recorded_at
+            )
+}
+
+------------------------------------------------------------
+-- Invariants
+------------------------------------------------------------
+
+invariant PositiveTransactionAmount {
+    for t in Transactions:
+        t.amount > 0
+}
+
+invariant OnlyAllowedParents {
+    for p in Parents:
+        p.email in config.allowed_emails
+}
+
+------------------------------------------------------------
+-- Actor Declarations
+------------------------------------------------------------
+
+actor AuthorisedParent {
+    identified_by: Parent where email in config.allowed_emails
+}
+
+actor BackupAgent {
+    identified_by: Parent where email in config.allowed_emails
+}
+
+------------------------------------------------------------
+-- Surfaces
+------------------------------------------------------------
+
+surface Home {
+    facing viewer: AuthorisedParent
+
+    exposes:
+        for child in Children:
+            child.name
+            child.balance
+
+    provides:
+        ParentAddsChild(viewer, name)
+        ParentExportsBackup(viewer)
+        ParentRestoresBackup(viewer, backup)
+
+    related:
+        for child in Children:
+            ChildDetail(child)
+}
+
+surface ChildDetail {
+    facing viewer: AuthorisedParent
+
+    context child: Child
+
+    exposes:
+        child.name
+        child.balance
+        for t in child.transactions:
+            t.kind
+            t.amount
+            t.note
+            t.recorded_at
+
+    provides:
+        ParentDeposits(viewer, child, amount, note)
+        ParentWithdraws(viewer, child, amount, note)
+        ParentRenamesChild(viewer, child, new_name)
+        ParentRemovesChild(viewer, child)
+}
+
+surface BackupApi {
+    facing agent: BackupAgent
+
+    provides:
+        ParentExportsBackup(agent)
+
+    @guarantee AuthenticatedOnly
+        -- Requests must carry a valid session for an authorised parent.
+        -- The external cron job authenticates as a parent before calling export.
+
+    @guidance
+        -- Returns BackupData as JSON.
+        -- The cron job saves the response to the network share
+        -- with a datetime-stamped filename.
+}
+
