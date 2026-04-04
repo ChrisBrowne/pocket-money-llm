@@ -89,6 +89,6 @@ Three test layers, each at its natural seam:
 
 - **Pure domain functions → unit tests.** No mocks needed, they're pure. Fast, numerous, cheap.
 - **Command handlers → integration tests.** Real SQLite, real filesystem. Each test gets a fresh database.
-- **User-visible features → Playwright e2e tests.** All happy paths must be covered.
+- **User-visible features → Playwright e2e tests.** All happy paths must be covered. If `docs/scenarios.md` exists, use it as the source of truth for what e2e tests to write — each scenario maps to at least one test.
 
 Infrastructure is never mocked. We own our infrastructure and tests run against the real thing.

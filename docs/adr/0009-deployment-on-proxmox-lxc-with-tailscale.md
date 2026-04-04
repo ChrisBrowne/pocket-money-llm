@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The user runs a Proxmox server at home and uses Tailscale on their devices for network access. Google OAuth requires a callback URL reachable by the user's browser. The user has custom hostnames (e.g. `pocketmoney.brownehq/`) via a local hosts file.
+The user runs a Proxmox server at home and uses Tailscale on their devices for network access. Google OAuth requires a callback URL reachable by the user's browser. The user has custom hostnames (e.g. `pocketmoney.myhome.local/`) via a local hosts file.
 
 ## Decision
 
@@ -17,5 +17,5 @@ Deploy in a Proxmox LXC container. Use Tailscale MagicDNS (e.g. `pocketmoney.tai
 - Access is limited to devices on the Tailnet — no public internet exposure
 - The LXC gets Tailscale installed and a stable MagicDNS name
 - SQLite DB lives local to the LXC filesystem; JSON exports go to a network-mounted share from the Windows host (Backblaze-backed)
-- The custom `.brownehq/` hostname works for bookmarks and casual access but is not used in OAuth configuration
+- The custom `.myhome.local/` hostname works for bookmarks and casual access but is not used in OAuth configuration
 - See ADR-0019 for process management (systemd) and deployment mechanism (git pull)
