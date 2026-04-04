@@ -6,18 +6,6 @@
 -- Value Types
 ------------------------------------------------------------
 
-value ChildName : String {
-    -- Trimmed on input; must be non-empty after trimming
-    normalise: trim
-    requires: length > 0
-}
-
-value Pence : Integer {
-    -- Positive amount in pence. £5.00 = 500 pence.
-    -- Display formatting (pence → "£X.XX") is a view-layer concern only.
-    requires: this > 0
-}
-
 value Session {
     -- Not a stored entity. Populated from Google OAuth profile data
     -- and held in a signed HTTP-only cookie (see ADR-0016).
@@ -37,17 +25,17 @@ value BackupData {
 }
 
 value ChildSnapshot {
-    name: ChildName
+    name: String
     created_at: Timestamp
 }
 
 value TransactionSnapshot {
-    child_name: ChildName
+    child_name: String
     kind: deposit | withdrawal
-    amount: Pence
+    amount: Integer
     note: String
     recorded_at: Timestamp
-    recorded_by: String                            -- email of the acting parent
+    recorded_by: String
 }
 
 ------------------------------------------------------------
@@ -55,7 +43,7 @@ value TransactionSnapshot {
 ------------------------------------------------------------
 
 entity Child {
-    name: ChildName
+    name: String
     created_at: Timestamp
 
     -- Relationships
@@ -63,21 +51,32 @@ entity Child {
 
     -- Derived
     balance: transactions.sum(t => if t.kind = deposit: t.amount else: -t.amount)
+
+    @guidance
+        -- name is a ChildName: trimmed on input, must be non-empty after
+        -- trimming. This is a parse-boundary concern (see ADR-0015).
+        -- balance is in pence (ADR-0014). £5.00 = 500.
+        -- Display formatting (pence → "£X.XX") is a view-layer concern.
 }
 
 entity Transaction {
     child: Child
     kind: deposit | withdrawal
-    amount: Pence
+    amount: Integer
     note: String
     recorded_at: Timestamp
-    recorded_by: String                            -- email of the acting parent (from Session)
-}
+    recorded_by: String
 
-@guidance TransactionImmutability
-    -- Transactions are append-only. There is no edit or delete for individual
-    -- transactions. Mistakes are corrected by adding an offsetting transaction
-    -- with an explanatory note (e.g. deposit to reverse an erroneous withdrawal).
+    @guidance
+        -- amount is in pence and must be > 0 (ADR-0014). This is enforced
+        -- at the parse boundary — the Pence type rejects zero and negative.
+        -- recorded_by holds the acting parent's email (ADR-0025).
+        --
+        -- Transactions are append-only. There is no edit or delete for
+        -- individual transactions (ADR-0020). Mistakes are corrected by
+        -- adding an offsetting transaction with an explanatory note
+        -- (e.g. deposit to reverse an erroneous withdrawal).
+}
 
 ------------------------------------------------------------
 -- Config
@@ -233,14 +232,14 @@ actor AuthorisedParent {
 }
 
 actor BackupAgent {
-    identified_by: config.backup_api_key via Authorization header
+    identified_by: Session where email in config.allowed_emails
 
     @guarantee ApiKeyAuth
-        -- Requests must carry a valid API key in the Authorization header
-        -- (e.g. "Bearer <key>"). The key is a static secret shared between
-        -- the app and the cron job (see ADR-0017).
-        -- This is entirely separate from cookie-based session auth —
-        -- backup API routes use their own middleware (ADR-0026).
+        -- In practice, the backup agent authenticates via a static API key
+        -- in the Authorization header (e.g. "Bearer <key>"), not a session
+        -- cookie. The key is a shared secret between the app and the cron
+        -- job (see ADR-0017). Backup API routes use their own middleware
+        -- group, entirely separate from cookie-based session auth (ADR-0026).
 }
 
 ------------------------------------------------------------
@@ -258,18 +257,9 @@ surface Home {
 
     provides:
         ParentAddsChild(viewer, name)
-        ParentExportsBackup(viewer)              -- browser download: "pocket-money-YYYY-MM-DDTHH-MM-SS.json"
-        ParentRestoresBackup(viewer, backup)     -- two-step: upload → confirm (see guidance)
+        ParentExportsBackup(viewer)
+        ParentRestoresBackup(viewer, backup)
         ParentLogsOut(viewer.session)
-
-    @guidance RestoreConfirmation
-        -- Restore is destructive — it wipes all existing data (ADR-0003).
-        -- The UI must present a two-step confirmation flow:
-        --   1. Parent uploads backup file → app parses and shows a summary
-        --      (number of children, number of transactions, export date)
-        --   2. Parent explicitly confirms → restore executes
-        -- If parsing fails (invalid format, Zod rejection), show an error
-        -- and do not proceed to the confirmation step.
 
     related:
         for child in Children:
@@ -278,6 +268,16 @@ surface Home {
     @guidance
         -- Balances are displayed as formatted currency (e.g. "£5.00"),
         -- not raw pence. Formatting is a view-layer concern.
+        --
+        -- Export triggers a browser download: "pocket-money-YYYY-MM-DDTHH-MM-SS.json".
+        --
+        -- Restore is destructive — it wipes all existing data (ADR-0003).
+        -- The UI must present a two-step confirmation flow:
+        --   1. Parent uploads backup file → app parses and shows a summary
+        --      (number of children, number of transactions, export date)
+        --   2. Parent explicitly confirms → restore executes
+        -- If parsing fails (invalid format, Zod rejection), show an error
+        -- and do not proceed to the confirmation step.
 }
 
 surface ChildDetail {
@@ -288,7 +288,7 @@ surface ChildDetail {
     exposes:
         child.name
         child.balance
-        for t in child.transactions order by recorded_at descending:
+        for t in child.transactions:
             t.kind
             t.amount
             t.note
@@ -301,7 +301,8 @@ surface ChildDetail {
         ParentRemovesChild(viewer, child)
 
     @guidance
-        -- Transactions are displayed newest-first (reverse chronological).
+        -- Transactions are displayed newest-first (reverse chronological),
+        -- ordered by recorded_at descending.
         -- All transactions are shown — no pagination in v1.
 }
 
