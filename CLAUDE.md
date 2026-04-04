@@ -29,6 +29,10 @@ The domain behaviour is specified in `pocket-money.allium` at the project root. 
 
 ## Development Guidelines
 
+### Makefile as the Developer Interface
+
+Every developer workflow — install, run, test, lint, deploy, database reset — must be a Makefile target. If a developer needs to remember a specific command, flag combination, or sequence of steps, it belongs in the Makefile. Raw commands should not need to be typed from memory or copied from docs. When implementing a new feature that introduces a new workflow (e.g. a migration step, a new test suite), add the corresponding Makefile target in the same change.
+
 ### Architecture: Functional Core, Imperative Shell
 
 Domain logic lives in pure functions — no side effects, no I/O, no dependencies. These are the core, and they are trivially unit testable.
