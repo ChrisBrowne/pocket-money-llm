@@ -108,6 +108,7 @@ config {
     google_redirect_uri: String                 -- env: GOOGLE_REDIRECT_URI, Tailscale hostname (ADR-0009)
     port: Integer = 3000                        -- env: PORT
     default_note: String = "weekly pocket money" -- env: DEFAULT_NOTE
+    dev_mode: Boolean = false                    -- env: DEV_MODE, enables auth bypass (ADR-0028)
 }
 
 ------------------------------------------------------------

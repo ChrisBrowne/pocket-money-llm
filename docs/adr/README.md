@@ -29,3 +29,4 @@
 | [0025](0025-record-acting-parent-on-transactions.md) | Record acting parent email on transactions | Accepted |
 | [0026](0026-separate-auth-middleware.md) | Separate auth middleware for UI and backup API | Accepted |
 | [0027](0027-env-var-catalogue.md) | Environment variable catalogue and .env.example | Accepted |
+| [0028](0028-dev-mode-auth-bypass.md) | Dev-mode authentication bypass | Accepted |

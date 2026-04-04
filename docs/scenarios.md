@@ -13,6 +13,8 @@ Each scenario maps to at least one Playwright e2e test. Happy path scenarios are
 
 ## Authentication
 
+**Testing note:** E2e tests run with `DEV_MODE=true` and authenticate via `POST /dev/login` (ADR-0028), not Google OAuth. The scenarios below describe the *domain behaviour* — the test implementation uses the dev login endpoint to obtain a session cookie, then asserts the same outcomes.
+
 ### AuthorisedParentLogsIn
 
 A parent with a whitelisted email completes Google OAuth and lands on the home page, greeted by name.
