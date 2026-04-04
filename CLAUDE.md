@@ -22,7 +22,9 @@ The domain behaviour is specified in `pocket-money.allium` at the project root. 
 - Backend framework: Elysia
 - Templates: TSX
 - Frontend interactivity: HTMX
+- Styling: Tailwind CSS (see ADR-0010)
 - Storage: SQLite (see ADR-0003)
+- Logging: Pino (see ADR-0029)
 - Deployment: Proxmox LXC
 
 ## Development Guidelines
@@ -46,9 +48,20 @@ Transform unstructured input into typed domain values at the boundary. A parsed 
 
 Lean on TypeScript's type system — discriminated unions, branded types, exhaustive switches. If the compiler can prevent a bug, prefer that over a runtime check.
 
+### No Null Returns — Use Result or Option
+
+Functions never return `null` or `undefined` to signal absence or failure. These are two distinct situations with distinct types:
+
+- **Failure** (something went wrong): return a `Result<T, E>`. The `E` is always an `Error` subclass (see ADR-0012).
+- **Absence** (nothing went wrong, but there's no value): return an `Option<T>` — a hand-rolled discriminated union (`{some: true, value: T} | {some: false}`) with the same shape as Result. Constructor functions `some(value)` and `none()`, type guards `isSome(option)` and `isNone(option)`.
+
+This applies everywhere a function might "not have a value to return" — lookups that may miss, parse functions that may reject input, session verification that may find no valid session. The caller always handles the variant explicitly via type guards, never via null checks.
+
+The litmus test: if you're about to write `: T | null` as a return type, use `Option<T>` instead. If you're about to write `: T | null` where null means "something failed", use `Result<T, E>` instead.
+
 ### Result Types at Infrastructure Boundaries
 
-Result types live where things can genuinely fail — infrastructure calls (DB queries, file operations) and the command handlers that orchestrate them. The Result type is hand-rolled — a minimal discriminated union with `isOk`/`isErr` checks, no monadic bells and whistles, no library dependency (see ADR-0012).
+Result types live where things can genuinely fail — infrastructure calls (DB queries, file operations) and the command handlers that orchestrate them. The Result type is hand-rolled — a minimal discriminated union with `isOk`/`isErr` guards, `assertOk`/`assertErr` assertion functions for tests, and an `Error`-constrained error variant. No monadic bells and whistles, no library dependency (see ADR-0012).
 
 Domain functions are pure and return plain values. If inputs are parsed and typed at the boundary, domain computation can't fail — there's nothing to wrap in a Result.
 
@@ -92,3 +105,9 @@ Three test layers, each at its natural seam:
 - **User-visible features → Playwright e2e tests.** All happy paths must be covered. If `docs/scenarios.md` exists, use it as the source of truth for what e2e tests to write — each scenario maps to at least one test.
 
 Infrastructure is never mocked. We own our infrastructure and tests run against the real thing.
+
+#### Playwright E2E Conventions
+
+**Test isolation**: All Playwright tests run in parallel. Every test must be fully independent — it creates its own state (add children, record transactions) and never relies on state left by another test. Each test worker uses its own SQLite database file to eliminate any possibility of cross-test interference.
+
+**DOM selectors — data-testid only**: All Playwright selectors use `data-testid` attributes, never CSS classes, tag names, or DOM structure. This decouples tests from visual design and HTML structure — elements can be freely moved, restyled, or restructured without breaking tests. The TSX views are responsible for placing `data-testid` attributes on every interactive and assertable element. Use descriptive, kebab-case names (e.g. `data-testid="child-card-alice"`, `data-testid="deposit-form"`, `data-testid="balance-display"`).
