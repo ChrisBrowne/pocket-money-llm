@@ -9,6 +9,8 @@
 value Session {
     -- Not a stored entity. Populated from Google OAuth profile data
     -- and held in a signed HTTP-only cookie (see ADR-0016).
+    -- Concurrent requests from different parents are safe — SQLite
+    -- serialises writes; no application-level locking needed.
     email: String
     name: String
 }
@@ -22,6 +24,17 @@ value BackupData {
         -- The canonical format contract is a strict Zod schema (ADR-0023).
         -- Both export (serialization) and restore (parsing) go through it.
         -- No .passthrough() — extra fields are rejected on import.
+        -- Referential integrity: Zod .refine() ensures every transaction's
+        -- child_name exists in the children array. Invalid references are
+        -- rejected at parse time, before any restore logic runs.
+        -- This lives in the schema (not the command handler) because:
+        --   1. "Parse, don't validate" — a parsed BackupData must be fully
+        --      trustworthy; the command handler should not re-check it.
+        --   2. The two-step restore flow parses at upload (step 1) and
+        --      executes at confirm (step 2). Integrity must be caught
+        --      early so invalid files never reach the confirmation step.
+        --   3. Orphaned transactions are just another reason a file is
+        --      invalid — same error path as missing fields or wrong types.
 }
 
 value ChildSnapshot {
@@ -200,6 +213,9 @@ rule RestoreBackup {
         -- Restore is destructive: all existing data is wiped before import.
         -- This is intentional — restore means "replace with this snapshot",
         -- not "merge with current state".
+        --
+        -- Implementation ordering: children must be inserted before
+        -- transactions, since transactions carry a foreign key to child.
 }
 
 ------------------------------------------------------------
@@ -304,6 +320,8 @@ surface ChildDetail {
         -- Transactions are displayed newest-first (reverse chronological),
         -- ordered by recorded_at descending.
         -- All transactions are shown — no pagination in v1.
+        -- recorded_by displays the raw email address. No attempt to
+        -- resolve it to a display name — the email is the stable identifier.
 }
 
 surface BackupApi {

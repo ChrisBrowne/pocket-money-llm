@@ -200,6 +200,15 @@ when: ParentDeposits(session, child: "Alice", amount: 1000, note: "birthday mone
 then: new Transaction has note = "birthday money from gran"
 ```
 
+### DepositWithEmptyNote
+
+An empty note is valid — the parent may clear the pre-filled default.
+
+```
+when: ParentDeposits(session, child: "Alice", amount: 500, note: "")
+then: new Transaction has note = ""
+```
+
 ### DepositRejectsZeroAmount
 
 The Pence value type requires amount > 0.
@@ -307,6 +316,18 @@ then:  not exists Child("Boob")
   and: Child("Bob") exists with balance = 0
 ```
 
+### RemoveChildWithNegativeBalance
+
+No guard against removing a child who "owes" money — removal is unconditional.
+
+```
+given: Child("Bob", balance: -300)                       -- -£3.00
+when:  ParentRemovesChild(session, child: "Bob")
+then:  not exists Child("Bob")
+       Home does not show "Bob"
+       no transactions for "Bob" exist in database
+```
+
 ---
 
 ## Backup — Export
@@ -347,6 +368,21 @@ then:  200 OK with BackupData as JSON body
 ```
 when: GET /api/backup with Authorization: "Bearer wrong-key"
 then: 401 Unauthorized
+```
+
+### ExportBackupEmptyDatabase
+
+Exporting when no data exists produces valid BackupData with empty arrays.
+
+```
+given: no Children exist
+       no Transactions exist
+when:  ParentExportsBackup(session)
+then:  browser downloads file named "pocket-money-YYYY-MM-DDTHH-MM-SS.json"
+  and: file contains BackupData:
+           children: []
+           transactions: []
+           exported_at: now
 ```
 
 ### ExportBackupApiRejectsMissingKey
@@ -398,6 +434,20 @@ Strict Zod parsing rejects unknown fields (no `.passthrough()`).
 ```
 when: parent uploads backup with extra fields (e.g. "colour": "blue" on a child)
 then: error shown: invalid backup file
+```
+
+### RestoreRejectsOrphanedTransactions
+
+A transaction referencing a child_name not present in the children array is caught by Zod `.refine()` at parse time.
+
+```
+given: Child("Alice", balance: 500)
+when:  parent uploads backup with:
+           children: [{name: "Alice", created_at: t1}]
+           transactions: [{child_name: "Bob", kind: deposit, amount: 500, ...}]
+then:  error shown: invalid backup file
+       Child("Alice") still exists with balance unchanged
+       no confirmation step shown
 ```
 
 ### RestoreFromEmptyBackup

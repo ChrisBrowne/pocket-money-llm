@@ -22,3 +22,5 @@ Sessions are stateless signed HTTP-only cookies. The cookie contains the authent
 - Revoking access means removing the email from `allowed_emails` and redeploying — acceptable for 2 users
 - The cookie signing secret must be stable across restarts (env var)
 - No session ID to revoke server-side — if the cookie is compromised, the only remediation is rotating the signing secret
+- Rotating `COOKIE_SECRET` invalidates all existing session cookies instantly — every parent is bounced to re-login via Google OAuth. This is acceptable for 2 users and is the expected operational procedure for secret rotation or session revocation
+- If an email is removed from `allowed_emails` between requests, the middleware rejects the next request despite the cookie signature being valid — the email check is authoritative. This is best verified with an integration test against the session middleware, not an e2e test
