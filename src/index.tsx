@@ -9,6 +9,7 @@ import { apiKeyMiddleware } from "./auth/api-key-middleware"
 import { devLoginRoutes } from "./auth/dev-login"
 import { COOKIE_NAME, expiredCookieOptions } from "./auth/session"
 import { childrenHandlers } from "./children/handlers"
+import { transactionHandlers } from "./transactions/handlers"
 
 const config = loadConfig()
 const db = openDatabase(config.databasePath)
@@ -58,6 +59,7 @@ app.group("", (group) =>
   group
     .use(sessionMiddleware(config))
     .use(childrenHandlers(db, config))
+    .use(transactionHandlers(db, config))
     .post("/auth/logout", ({ cookie, set }) => {
       const opts = expiredCookieOptions(config.devMode)
       const sessionCookie = cookie[COOKIE_NAME]
