@@ -211,6 +211,30 @@ when: ParentDeposits(session, child: "Alice", amount: 500, note: "")
 then: new Transaction has note = ""
 ```
 
+### DepositUpdatesBalanceInPlace
+
+When a deposit is submitted on the child detail page, the transaction appears at the top of the list and the balance display updates — both without a full page reload.
+
+```
+given: Child("Alice", balance: 500)                     -- £5.00
+       ChildDetail("Alice") is open in the browser
+when:  ParentDeposits via the deposit form: amount: 250, note: "pocket money"
+then:  balance display shows "£7.50" (updated in place, no page reload)
+  and: new transaction row visible at top of transaction list
+```
+
+### WithdrawalUpdatesBalanceInPlace
+
+Same live-update behaviour for withdrawals.
+
+```
+given: Child("Alice", balance: 500)                     -- £5.00
+       ChildDetail("Alice") is open in the browser
+when:  ParentWithdraws via the withdraw form: amount: 200, note: "sweets"
+then:  balance display shows "£3.00" (updated in place, no page reload)
+  and: new transaction row visible at top of transaction list
+```
+
 ### DepositRejectsZeroAmount
 
 The Pence value type requires amount > 0.

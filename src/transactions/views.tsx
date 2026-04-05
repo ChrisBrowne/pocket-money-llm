@@ -121,11 +121,11 @@ export function ChildDetailPage({
   )
 }
 
-export function BalanceDisplay({ balance }: { balance: number }) {
+export function BalanceDisplay({ balance, oob }: { balance: number; oob?: boolean }) {
   const safeBalance = escapeHtml(formatPence(balance))
   const balanceColor = balance < 0 ? "text-red-600" : "text-green-700"
   return (
-    <div id="balance-display" data-testid="balance-display" class={`text-3xl font-mono font-bold ${balanceColor}`}>
+    <div id="balance-display" data-testid="balance-display" class={`text-3xl font-mono font-bold ${balanceColor}`} hx-swap-oob={oob ? "true" : undefined}>
       {safeBalance}
     </div>
   )

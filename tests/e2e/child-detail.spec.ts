@@ -42,6 +42,22 @@ test.describe("Child Detail — Deposits", () => {
     await expect(page.getByTestId("balance-display")).toContainText("£5.00")
   })
 
+  test("DepositUpdatesBalanceInPlace", async ({ page }) => {
+    // Seed an initial balance via API so we start at £5.00
+    await depositTo(page, "Alice", "5.00")
+    // Open the detail page in the browser
+    await page.goto("/children/Alice")
+    await expect(page.getByTestId("balance-display")).toContainText("£5.00")
+    // Submit deposit via the browser form (exercises HTMX OOB swap)
+    await page.getByTestId("deposit-amount").fill("2.50")
+    await page.getByTestId("deposit-button").click()
+    // Balance should update in place without a page reload
+    await expect(page.getByTestId("balance-display")).toContainText("£7.50")
+    // New transaction should appear at the top of the list
+    const transactions = page.locator("[data-testid^='transaction-']:not([data-testid='transaction-list'])")
+    await expect(transactions).toHaveCount(2)
+  })
+
   test("DepositUsesDefaultNote", async ({ page }) => {
     // Don't change the note — should use the pre-filled default
     await page.goto("/children/Alice")
@@ -98,6 +114,21 @@ test.describe("Child Detail — Withdrawals", () => {
     await withdrawFrom(page, "Alice", "2.00", "sweets")
     await page.goto("/children/Alice")
     await expect(page.getByTestId("balance-display")).toContainText("£3.00")
+  })
+
+  test("WithdrawalUpdatesBalanceInPlace", async ({ page }) => {
+    await depositTo(page, "Alice", "5.00")
+    await page.goto("/children/Alice")
+    await expect(page.getByTestId("balance-display")).toContainText("£5.00")
+    // Submit withdrawal via the browser form (exercises HTMX OOB swap)
+    await page.getByTestId("withdraw-amount").fill("2.00")
+    await page.getByTestId("withdraw-note").fill("sweets")
+    await page.getByTestId("withdraw-button").click()
+    // Balance should update in place without a page reload
+    await expect(page.getByTestId("balance-display")).toContainText("£3.00")
+    // New transaction should appear
+    const transactions = page.locator("[data-testid^='transaction-']:not([data-testid='transaction-list'])")
+    await expect(transactions).toHaveCount(2)
   })
 
   test("WithdrawalCanGoNegative", async ({ page }) => {

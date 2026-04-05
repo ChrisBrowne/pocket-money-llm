@@ -60,7 +60,7 @@ export function transactionHandlers(db: Database, config: Config) {
         <>
           {latestTx && <TransactionItem tx={latestTx} />}
           <template>
-            <BalanceDisplay balance={detail.value.child.balance} />
+            <BalanceDisplay balance={detail.value.child.balance} oob={true} />
           </template>
           <template>
             <div id="deposit-errors" hx-swap-oob="true" data-testid="deposit-errors"></div>
@@ -98,7 +98,7 @@ export function transactionHandlers(db: Database, config: Config) {
         <>
           {latestTx && <TransactionItem tx={latestTx} />}
           <template>
-            <BalanceDisplay balance={detail.value.child.balance} />
+            <BalanceDisplay balance={detail.value.child.balance} oob={true} />
           </template>
           <template>
             <div id="withdraw-errors" hx-swap-oob="true" data-testid="withdraw-errors"></div>
