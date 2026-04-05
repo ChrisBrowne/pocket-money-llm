@@ -40,6 +40,17 @@ export function HomePage({ sessionName, children, defaultNote }: HomePageProps) 
 
       <div data-testid="backup-section">
         <a href="/backup/export" data-testid="export-backup">Export Backup</a>
+        <form
+          method="post"
+          action="/backup/restore/upload"
+          enctype="multipart/form-data"
+          data-testid="restore-upload-form"
+        >
+          <input type="file" name="file" accept=".json" required data-testid="restore-file-input" />
+          <button type="submit" data-testid="restore-upload-button">
+            Restore from Backup
+          </button>
+        </form>
       </div>
     </Layout>
   )

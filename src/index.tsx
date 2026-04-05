@@ -10,6 +10,7 @@ import { devLoginRoutes } from "./auth/dev-login"
 import { COOKIE_NAME, expiredCookieOptions } from "./auth/session"
 import { childrenHandlers } from "./children/handlers"
 import { transactionHandlers } from "./transactions/handlers"
+import { backupHandlers, backupApiHandlers } from "./backup/handlers"
 
 const config = loadConfig()
 const db = openDatabase(config.databasePath)
@@ -50,8 +51,7 @@ if (config.devMode) {
 app.group("/api", (group) =>
   group
     .use(apiKeyMiddleware(config.backupApiKey))
-    // Backup API endpoint will be added in Phase 5
-    .get("/backup", () => ({ placeholder: true })),
+    .use(backupApiHandlers(db)),
 )
 
 // UI routes — session auth
@@ -60,6 +60,7 @@ app.group("", (group) =>
     .use(sessionMiddleware(config))
     .use(childrenHandlers(db, config))
     .use(transactionHandlers(db, config))
+    .use(backupHandlers(db, config))
     .post("/auth/logout", ({ cookie, set }) => {
       const opts = expiredCookieOptions(config.devMode)
       const sessionCookie = cookie[COOKIE_NAME]
