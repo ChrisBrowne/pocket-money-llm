@@ -12,19 +12,19 @@ The domain specification is complete: 29 ADRs, an Allium spec, and 30+ scenarios
 src/
   index.tsx                     -- Elysia app entrypoint
   config.ts                     -- env var parsing, fail-fast
-  db.ts                         -- SQLite connection + schema init
-  logger.ts                     -- Pino instance
+  db.ts                         -- SQLite connection + schema init (module-level singleton)
+  logger.ts                     -- Pino instance (module-level singleton)
   styles/
-    input.css                   -- Tailwind directives (@tailwind base/components/utilities)
+    input.css                   -- Tailwind v4 entry point (@import "tailwindcss")
   shared/
     result.ts                   -- Result<T,E>, Option<T>
     types.ts                    -- branded types: ChildName, Pence
     currency.ts                 -- formatPence ("£X.XX")
-    layout.tsx                  -- HTML shell (HTMX, built CSS, OOB error element)
+    layout.tsx                  -- HTML shell (vendored HTMX, built CSS, OOB error element)
   auth/
     session.ts                  -- cookie sign/verify, Session type
-    session-middleware.ts        -- Elysia guard for UI routes
-    api-key-middleware.ts        -- Elysia guard for backup API routes
+    session-middleware.ts        -- Elysia derive for session + beforeHandle guard
+    api-key-middleware.ts        -- Elysia guard for backup API routes (timing-safe comparison)
     google-oauth.ts             -- OAuth routes (registered only when DEV_MODE=false)
     dev-login.tsx               -- /dev/login route + view (registered only when DEV_MODE=true)
   children/
@@ -43,6 +43,7 @@ src/
     handlers.ts                 -- browser export, API export, restore upload/confirm
     views.tsx                   -- restore summary, confirm dialog, error partial
 public/
+  htmx.min.js                  -- vendored HTMX (pinned version, no CDN dependency)
   styles.css                    -- built Tailwind output (gitignored)
 tests/
   unit/                         -- pure domain functions
@@ -59,13 +60,16 @@ Makefile
 
 ### 1.1 -- Project initialisation
 - `bun init` for `package.json` + `tsconfig.json`
-- Dependencies: `elysia`, `@elysiajs/html`, `pino`, `zod`
-- Dev dependencies: `pino-pretty`, `@tailwindcss/cli`, `@types/bun`
-- `tsconfig.json`: `"jsx": "react"`, `"jsxFactory": "Html.createElement"`, `"jsxFragmentFactory": "Html.Fragment"`
+- Dependencies: `elysia`, `@elysiajs/html`, `@elysiajs/static`, `pino`, `zod`
+- Dev dependencies: `pino-pretty`, `@tailwindcss/cli`, `@types/bun`, `@kitajs/ts-html-plugin`
+- `tsconfig.json`:
+  - `"jsx": "react-jsx"`, `"jsxImportSource": "@kitajs/html"` (automatic JSX transform -- no manual `Html` import needed in TSX files)
+  - `"compilerOptions.plugins": [{ "name": "@kitajs/ts-html-plugin" }]` (flags unsafe interpolation at the TypeScript level -- XSS prevention)
 - Note: `@elysiajs/html` bundles `@kitajs/html` internally -- no separate install needed
-- `src/styles/input.css` with Tailwind directives (`@tailwind base; @tailwind components; @tailwind utilities;`)
+- `src/styles/input.css` with Tailwind v4 entry point: `@import "tailwindcss";` (no `tailwind.config.js` needed -- v4 uses CSS-native configuration)
 - Tailwind CSS built via CLI: `bunx @tailwindcss/cli -i src/styles/input.css -o public/styles.css --minify`
-- `public/` directory served as static assets by Elysia (`@elysiajs/static` or manual)
+- Vendor HTMX: download a pinned version of `htmx.min.js` (e.g. 2.0.4) into `public/htmx.min.js` -- no CDN dependency (the app runs on Tailscale and may not have reliable internet)
+- `public/` directory served as static assets by Elysia via `@elysiajs/static`
 - Update `.env.example` to add `DEV_MODE` (it already exists, just missing that var)
 - Update `.gitignore` with `node_modules/`, `.env`, `data/`, `*.db`, `public/styles.css`
 
@@ -98,11 +102,18 @@ Per ADR-0012:
 - Dev mode warning per ADR-0028
 
 ### 1.7 -- Database (`src/db.ts`)
-- Open SQLite at `DATABASE_PATH` via `bun:sqlite`, enable WAL mode
-- Schema:
+- Open SQLite at `DATABASE_PATH` via `bun:sqlite`
+- Module-level singleton: `export const db = new Database(config.databasePath)` -- imported directly by command modules, passed as argument to command functions
+- Pragmas (run immediately after opening):
+  - `PRAGMA journal_mode = WAL;` -- concurrent reads during writes
+  - `PRAGMA foreign_keys = ON;` -- **critical**: SQLite disables FK enforcement by default; without this, ON DELETE CASCADE is inert
+  - `PRAGMA busy_timeout = 5000;` -- prevents "database is locked" when UI and backup API hit DB simultaneously
+  - `PRAGMA synchronous = NORMAL;` -- safe with WAL, faster than default FULL
+- Schema (using `CREATE TABLE IF NOT EXISTS` for idempotent startup):
   - `children` (name TEXT PRIMARY KEY, created_at TEXT NOT NULL)
   - `transactions` (id INTEGER PRIMARY KEY AUTOINCREMENT, child_name TEXT NOT NULL REFERENCES children(name) ON DELETE CASCADE, kind TEXT NOT NULL CHECK(kind IN ('deposit','withdrawal')), amount INTEGER NOT NULL CHECK(amount > 0), note TEXT NOT NULL DEFAULT '', recorded_at TEXT NOT NULL, recorded_by TEXT NOT NULL)
-- **Integration tests**: tables exist, FK constraint enforced, CHECK constraint enforced
+- Timestamp format: ISO 8601 UTC everywhere (e.g. `2024-01-15T10:30:00.000Z`) -- consistent between app writes and backup export/import
+- **Integration tests**: tables exist, FK constraint enforced (insert transaction with nonexistent child_name fails), CHECK constraint enforced (amount <= 0 fails), CASCADE works (delete child removes transactions)
 
 ### 1.8 -- Makefile (initial targets)
 - `install` -- `bun install`
@@ -130,16 +141,24 @@ Per ADR-0012:
 - `signSession(session, secret): string` -- JSON -> HMAC-SHA256 sign -> `base64(json).base64(hmac)`
 - `verifySession(cookie, secret): Option<Session>` -- verify HMAC, parse JSON
 - Uses `Bun.CryptoHasher` (no external dep)
-- **Integration tests**: round-trip, tampered cookie -> none, empty -> none
+- Cookie attributes (set on every `Set-Cookie`):
+  - `HttpOnly` -- prevents JavaScript access (ADR-0016)
+  - `SameSite=Lax` -- CSRF mitigation for navigation requests
+  - `Secure` -- set in production (when `DEV_MODE=false`); omit in dev for HTTP localhost
+  - `Path=/` -- cookie sent on all routes
+- **Integration tests**: round-trip, tampered cookie -> none, empty -> none, cookie attributes present
 
 ### 2.2 -- Session middleware (`src/auth/session-middleware.ts`)
-- Elysia plugin: reads cookie, verifies, checks email in `allowed_emails`
-- Success: derives `session: Session` into context
+- Elysia plugin using `derive` to extract session from cookie (per-request, since it depends on the request cookie)
+- Reads cookie, verifies signature, checks email in `allowed_emails`
+- Success: derives `session: Session` into handler context
 - Failure: redirects to `/dev/login` (DEV_MODE) or `/auth/google` (production)
-- **Integration tests**: valid cookie passes, tampered redirects, email not in whitelist redirects
+- CSRF protection: `beforeHandle` hook checks `Origin` header on mutation requests (POST, DELETE) matches the expected host. Rejects mismatches with 403.
+- **Integration tests**: valid cookie passes, tampered redirects, email not in whitelist redirects, cross-origin POST rejected
 
 ### 2.3 -- API key middleware (`src/auth/api-key-middleware.ts`)
 - Reads `Authorization: Bearer <key>`, compares to `config.backup_api_key`
+- Comparison must be timing-safe: use `crypto.timingSafeEqual` from `node:crypto` (prevents key length leakage via timing side-channel)
 - Failure: 401 Unauthorized
 
 ### 2.4 -- Dev login (`src/auth/dev-login.tsx`)
@@ -148,14 +167,24 @@ Per ADR-0012:
 - Only registered when `DEV_MODE=true`
 
 ### 2.5 -- Base layout (`src/shared/layout.tsx`)
-- HTML document: HTMX script (CDN), `<link>` to `/styles.css` (built Tailwind output)
+- HTML document: `<script src="/htmx.min.js">` (vendored, no CDN), `<link>` to `/styles.css` (built Tailwind output)
+- HTMX config: `<meta name="htmx-config" content='{"allowNestedOobSwaps": false}'>` -- OOB swaps only processed on response siblings, not descendants (prevents accidental extraction from reused fragments)
 - `<div id="global-error"></div>` for OOB error swaps (ADR-0013)
 - Slot for page content, logout button
+- All dynamic content in TSX views must be escaped via `@kitajs/html` safe patterns (enforced by `@kitajs/ts-html-plugin` at compile time)
 
 ### 2.6 -- App entrypoint (`src/index.tsx`)
-- Create Elysia app, load config, init logger, open DB
+- Create Elysia app, import config, logger, and db as module singletons
+- Register `@elysiajs/static` for `public/` directory
+- Session middleware group: UI routes protected by session `derive` + `beforeHandle` guard
+- API key middleware group: `/api` routes protected by API key `beforeHandle` guard
 - Conditionally register dev login or Google OAuth
-- Top-level error handler: catch unhandled exceptions, log, return HTMX OOB swap to `#global-error`
+- Top-level error handler via Elysia's `onError` lifecycle hook: log error at `error` level, return HTTP 200 with HTMX OOB swap targeting `#global-error` wrapped in `<template>` (see HTMX conventions below)
+- `GET /health` -- returns a simple HTML fragment (no auth required), useful for systemd health checks and monitoring
+- HTTP security headers via `onAfterHandle` hook on all responses:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
 - Listen on `config.port`
 
 ### Verification
@@ -182,9 +211,9 @@ Per ADR-0012:
 - Error partials for duplicate name, empty name
 
 ### 3.3 -- Handlers (`src/children/handlers.ts`)
-- `GET /` -- listChildren -> HomePage
-- `POST /children` -- parse name -> addChild -> updated children list partial (or error partial)
-- `DELETE /children/:name` -- parse name -> removeChild -> redirect to home
+- `GET /` -- listChildren -> HomePage (full page)
+- `POST /children` -- parse name -> addChild -> return updated children list partial (`hx-target="#children-list"`, `hx-swap="innerHTML"`). On error (duplicate name, empty name): return error partial targeting the form's error area. All responses HTTP 200.
+- `DELETE /children/:name` -- parse name -> removeChild -> return 200 with `HX-Redirect: /` header
 
 ### Verification
 `make dev`, log in, see empty state. Add "Alice" (£0.00). Add duplicate "Alice" (error). Add "Bob". Remove "Bob". All integration tests pass.
@@ -210,9 +239,9 @@ Per ADR-0012:
 - `BalanceDisplay` -- `data-testid="balance-display"`
 
 ### 4.3 -- Handlers (`src/transactions/handlers.ts`)
-- `GET /children/:name` -- getChildDetail -> ChildDetailPage (or 404)
-- `POST /children/:name/deposit` -- parse amount + note -> deposit -> updated detail partial
-- `POST /children/:name/withdraw` -- parse amount + note -> withdraw -> updated detail partial
+- `GET /children/:name` -- getChildDetail -> ChildDetailPage (full page, or 404)
+- `POST /children/:name/deposit` -- parse amount + note -> deposit -> return new transaction row targeting `#transaction-list` (`hx-swap="afterbegin"`) PLUS OOB swap for balance display (`#balance-display`), both wrapped in `<template>`. On validation error (zero/negative amount): return error partial targeting the deposit form's error area. All responses HTTP 200.
+- `POST /children/:name/withdraw` -- same pattern as deposit
 
 **Parse boundary**: user enters pounds ("5.00"), `parsePence` converts to integer pence (500). Downstream everything is integer.
 
@@ -266,7 +295,7 @@ Export downloads JSON. Upload valid file -> summary. Confirm -> data replaced. U
 
 ### 6.1 -- OAuth routes (`src/auth/google-oauth.ts`)
 - `GET /auth/google` -- redirect to Google consent screen
-- `GET /auth/callback` -- exchange code for tokens, extract email + name, check whitelist, sign session cookie or reject
+- `GET /auth/callback` -- exchange code for tokens via raw `fetch()` to Google's token and userinfo endpoints (no OAuth library -- minimal dependency philosophy), extract email + name, check whitelist, sign session cookie or reject
 - Only registered when `DEV_MODE` is not true
 
 ### 6.2 -- Logout handler
@@ -283,15 +312,23 @@ With real Google credentials and `DEV_MODE=false`, full OAuth flow works. Unauth
 
 ### 7.1 -- Setup
 - Install `@playwright/test`
-- `playwright.config.ts`: run server with `DEV_MODE=true`, each worker gets unique `DATABASE_PATH`
+- `playwright.config.ts`:
+  - Per-worker server instances: each worker starts its own app with unique `DATABASE_PATH` and `PORT`
+  - `webServer` config: `DATABASE_PATH=/tmp/pm-test-${workerIndex}.db PORT=${3100 + workerIndex} DEV_MODE=true bun src/index.tsx`
+  - `baseURL`: `http://localhost:${3100 + workerIndex}`
+  - Temp DB files cleaned up after test run
 - Helper: `login(page, email)` -- POST to `/dev/login`
 - Makefile target: `test-e2e` -- `bunx playwright test`
 
 ### 7.2 -- Test files mapping to scenarios
-- `tests/e2e/auth.spec.ts` -- AuthorisedParentLogsIn, UnauthenticatedVisitorRedirected, ParentLogsOut
-- `tests/e2e/home.spec.ts` -- HomeShowsEmptyState, HomeShowsAllChildrenWithBalances, AddChild (happy + error cases), AddChildTrimsWhitespace
-- `tests/e2e/child-detail.spec.ts` -- ViewChildDetail, Deposit (happy + error), Withdrawal (happy + negative balance), CorrectMistakeWithOffsetting, TransactionRecordsWhichParentActed, TransactionsAreIsolatedPerChild, AmountsDisplayedAsPoundsAndPence, RemoveChild
-- `tests/e2e/backup.spec.ts` -- ExportViaBrowser, ExportEmptyDatabase, RestoreWithConfirmation, RestoreRejectsInvalid, RestoreFromEmpty
+
+Every scenario in `docs/scenarios.md` is covered. API key scenarios are integration tests (no browser needed); all others are Playwright e2e tests.
+
+- `tests/e2e/auth.spec.ts` -- AuthorisedParentLogsIn, UnauthorisedEmailRejected (via dev login rejection), UnauthenticatedVisitorRedirected, ParentLogsOut
+- `tests/e2e/home.spec.ts` -- HomeShowsEmptyStateWhenNoChildren, HomeShowsAllChildrenWithBalances, AddChildWithEmptyBalance, AddChildRejectsDuplicateName, AddChildRejectsEmptyName, AddChildTrimsWhitespace
+- `tests/e2e/child-detail.spec.ts` -- ViewChildDetailShowsBalanceAndHistory, ViewChildDetailWithNoTransactions, DepositIncreasesBalance, DepositUsesDefaultNote, DepositWithCustomNote, DepositWithEmptyNote, DepositRejectsZeroAmount, DepositRejectsNegativeAmount, WithdrawalDecreasesBalance, WithdrawalCanGoNegative, WithdrawalFromZeroBalance, CorrectMistakeWithOffsettingTransaction, RemoveChildDeletesEverything, RemoveChildWithNoTransactions, RemoveChildWithNegativeBalance, TransactionRecordsWhichParentActed, TransactionsAreIsolatedPerChild, AmountsDisplayedAsPoundsAndPence
+- `tests/e2e/backup.spec.ts` -- ExportBackupViaBrowser, ExportBackupEmptyDatabase, RestoreShowsConfirmationBeforeExecuting, RestoreRejectsInvalidFile, RestoreRejectsExtraFields, RestoreRejectsOrphanedTransactions, RestoreFromEmptyBackup
+- `tests/integration/backup-api.test.ts` -- ExportBackupViaApiKey, ExportBackupApiRejectsInvalidKey, ExportBackupApiRejectsMissingKey (these call the API directly, no browser)
 
 ### Verification
 `make test-e2e` passes all scenarios. Tests run in parallel with isolated databases.
@@ -309,12 +346,18 @@ With real Google credentials and `DEV_MODE=false`, full OAuth flow works. Unauth
 ### 8.2 -- Request logging
 - Elysia lifecycle hooks: method, path, status, duration at info level (ADR-0029)
 
-### 8.3 -- Deployment artifacts
+### 8.3 -- Graceful shutdown
+- Handle `SIGTERM` (sent by `systemctl stop`): stop Elysia server, close SQLite connection, exit cleanly
+- ```ts
+  process.on("SIGTERM", () => { server.stop(); db.close(); process.exit(0) })
+  ```
+
+### 8.4 -- Deployment artifacts
 - `pocket-money.service` -- systemd unit file
 - Makefile target: `deploy` (documents the SSH + git pull + restart flow)
 
-### 8.4 -- Final Makefile targets
-`install`, `css`, `css-watch`, `build`, `dev`, `start`, `test`, `test-unit`, `test-integration`, `test-e2e`, `lint`, `clean`, `db-reset`, `deploy`
+### 8.5 -- Final Makefile targets
+`install`, `css`, `css-watch`, `build`, `dev`, `start`, `test`, `test-unit`, `test-integration`, `test-e2e`, `lint` (`tsc --noEmit` -- also runs `@kitajs/ts-html-plugin` checks), `clean`, `db-reset`, `deploy`
 
 ---
 
@@ -343,6 +386,11 @@ Phase 8 (Polish) ──── needs all above
 - **Each phase is a commit boundary** -- commit after each phase passes its verification step
 - **Tests are written alongside code**, not in a separate pass
 - **Makefile grows with each phase** -- new workflows get targets immediately
-- **HTMX response strategy**: mutations return HTML partials for swap; remove child uses `HX-Redirect`; form errors return error partials targeting the form's error area
+- **Module-level singletons for db and logger** -- imported directly where needed, passed as arguments to command functions. `derive` is used only for `session` (per-request, depends on cookie). No Elysia `decorate`.
+- **All HTTP responses are 200** -- we own both sides of the HTMX client/server contract. Expected errors (duplicate name, validation failures) return 200 with error HTML partials. Unexpected errors (unhandled exceptions) return 200 with OOB error swap. HTTP status codes are a REST API concern, not relevant here. The only exceptions: 401 from API key middleware (consumed by cron, not HTMX), and redirects (302).
+- **HTMX OOB convention**: all OOB swap elements are wrapped in `<template>` for consistency. This prevents the browser from briefly rendering OOB content before HTMX extracts it, and is required for table rows/list items. Applying it uniformly means nobody needs to think about which elements need wrapping.
+- **HTMX response strategy**: mutations return HTML partials for swap; when multiple page areas need updating (e.g. new transaction row + updated balance), use OOB swaps in `<template>`. Remove child uses `HX-Redirect`. Form errors return error partials targeting the form's error area. Success responses include OOB swap to clear the error area.
 - **Pence input**: HTML forms use pounds (type="number" step="0.01"), `parsePence` converts at the boundary
-- **Tailwind CSS**: built via `@tailwindcss/cli` (no PostCSS, no bundler). Output to `public/styles.css` (gitignored). `make css` for one-shot build, `make dev` runs watch mode alongside the Bun server.
+- **Tailwind CSS**: built via `@tailwindcss/cli` v4 (no PostCSS, no bundler, no `tailwind.config.js`). Input: `@import "tailwindcss"`. Output to `public/styles.css` (gitignored). `make css` for one-shot build, `make dev` runs watch mode alongside the Bun server.
+- **`make dev` parallelism**: `$(MAKE) css-watch & bun --watch src/index.tsx` (background the CSS watcher, foreground the Bun server)
+- **XSS prevention**: `@kitajs/ts-html-plugin` flags unsafe interpolation in TSX at the TypeScript level. `make lint` (`tsc --noEmit`) catches these. All dynamic content (child names, notes, emails) must use safe interpolation patterns.

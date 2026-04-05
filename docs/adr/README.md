@@ -31,3 +31,4 @@
 | [0027](0027-env-var-catalogue.md) | Environment variable catalogue and .env.example | Accepted |
 | [0028](0028-dev-mode-auth-bypass.md) | Dev-mode authentication bypass | Accepted |
 | [0029](0029-structured-logging-with-pino.md) | Structured JSON logging with Pino | Accepted |
+| [0030](0030-htmx-conventions.md) | HTMX conventions: vendored, always-200, OOB in template | Accepted |
