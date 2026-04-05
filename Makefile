@@ -10,7 +10,7 @@ css-watch:
 	bunx @tailwindcss/cli -i src/styles/input.css -o public/styles.css --watch
 
 dev:
-	$(MAKE) css-watch & DEV_MODE=true bun --watch src/index.tsx
+	$(MAKE) css-watch & bun --watch src/index.tsx
 
 build: css
 
