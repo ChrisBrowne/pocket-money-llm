@@ -39,3 +39,6 @@ data/
 
 # Built Tailwind output
 public/styles.css
+
+# Playwright
+test-results/
