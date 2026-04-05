@@ -20,11 +20,26 @@ const app = new Elysia()
   .use(html())
   .use(staticPlugin({ prefix: "/", assets: "public" }))
 
-  // HTTP security headers on all responses
-  .onAfterHandle({ as: "global" }, ({ set }) => {
+  // Request logging per ADR-0029
+  .onBeforeHandle({ as: "global" }, ({ request, store }) => {
+    ;(store as any).__requestStart = performance.now()
+  })
+  .onAfterHandle({ as: "global" }, ({ request, set, store }) => {
+    // HTTP security headers
     set.headers["x-content-type-options"] = "nosniff"
     set.headers["x-frame-options"] = "DENY"
     set.headers["referrer-policy"] = "strict-origin-when-cross-origin"
+
+    // Request logging
+    const start = (store as any).__requestStart as number | undefined
+    const duration = start ? Math.round(performance.now() - start) : undefined
+    const url = new URL(request.url)
+    if (url.pathname !== "/health") {
+      logger.info(
+        { method: request.method, path: url.pathname, status: set.status ?? 200, duration },
+        "request",
+      )
+    }
   })
 
   // Health check — no auth required
@@ -34,7 +49,7 @@ const app = new Elysia()
   .onError({ as: "global" }, ({ error }) => {
     logger.error({ err: error, stack: (error as Error).stack }, "Unhandled error")
     return new Response(
-      `<template><div id="global-error" hx-swap-oob="true"><p>Something went wrong. Please try again.</p></div></template>`,
+      `<template><div id="global-error" hx-swap-oob="true"><div class="bg-red-50 border border-red-200 rounded-md p-4 shadow-lg"><p class="text-sm text-red-700">Something went wrong. Please try again.</p></div></div></template>`,
       {
         status: 200,
         headers: { "content-type": "text/html" },
@@ -83,7 +98,7 @@ app.group("", (group) =>
     }),
 )
 
-app.listen(config.port)
+const server = app.listen(config.port)
 
 logger.info(
   {
@@ -93,5 +108,13 @@ logger.info(
   },
   "Pocket Money Tracker started",
 )
+
+// Graceful shutdown on SIGTERM (systemctl stop)
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM received, shutting down gracefully")
+  server.stop()
+  db.close()
+  process.exit(0)
+})
 
 export { app, db, config }

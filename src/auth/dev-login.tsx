@@ -8,24 +8,35 @@ export function devLoginRoutes(config: Config) {
     .get("/dev/login", () => {
       const emails = Array.from(config.allowedEmails)
       return (
-        <html>
+        <html lang="en">
           <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>Dev Login — Pocket Money Tracker</title>
+            <link rel="stylesheet" href="/styles.css" />
           </head>
-          <body>
-            <h1>Dev Login</h1>
-            <p>Select an account to log in as:</p>
-            {emails.map((email) => {
-              const safeEmail = escapeHtml(email)
-              return (
-                <form method="post" action="/dev/login">
-                  <input type="hidden" name="email" value={safeEmail} />
-                  <button type="submit" data-testid={`dev-login-${safeEmail}`}>
-                    {safeEmail}
-                  </button>
-                </form>
-              )
-            })}
+          <body class="bg-gray-50 min-h-screen flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-md p-8 w-full max-w-sm">
+              <h1 class="text-xl font-semibold text-gray-800 mb-2">Dev Login</h1>
+              <p class="text-sm text-gray-500 mb-6">Select an account:</p>
+              <div class="flex flex-col gap-2">
+                {emails.map((email) => {
+                  const safeEmail = escapeHtml(email)
+                  return (
+                    <form method="post" action="/dev/login">
+                      <input type="hidden" name="email" value={safeEmail} />
+                      <button
+                        type="submit"
+                        data-testid={`dev-login-${safeEmail}`}
+                        class="w-full text-left px-4 py-3 rounded-md border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors text-sm"
+                      >
+                        {safeEmail}
+                      </button>
+                    </form>
+                  )
+                })}
+              </div>
+            </div>
           </body>
         </html>
       )
@@ -38,7 +49,6 @@ export function devLoginRoutes(config: Config) {
         return "Forbidden: email not in whitelist"
       }
 
-      // Use email local part as display name in dev mode
       const name = email.split("@")[0] || email
       const session = { email, name }
       const signed = signSession(session, config.cookieSecret)

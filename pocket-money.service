@@ -1,0 +1,15 @@
+[Unit]
+Description=Pocket Money Tracker
+After=network.target
+
+[Service]
+Type=simple
+User=pocket-money
+WorkingDirectory=/opt/pocket-money
+ExecStart=/usr/local/bin/bun src/index.tsx
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/opt/pocket-money/.env
+
+[Install]
+WantedBy=multi-user.target
