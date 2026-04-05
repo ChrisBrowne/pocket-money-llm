@@ -44,13 +44,16 @@ export function devLoginRoutes(config: Config) {
       const signed = signSession(session, config.cookieSecret)
       const opts = cookieOptions(config.devMode)
 
-      cookie[COOKIE_NAME].set({
-        value: signed,
-        httpOnly: opts.httpOnly,
-        sameSite: opts.sameSite,
-        secure: opts.secure,
-        path: opts.path,
-      })
+      const sessionCookie = cookie[COOKIE_NAME]
+      if (sessionCookie) {
+        sessionCookie.set({
+          value: signed,
+          httpOnly: opts.httpOnly,
+          sameSite: opts.sameSite,
+          secure: opts.secure,
+          path: opts.path,
+        })
+      }
 
       set.status = 302
       set.headers["location"] = "/"

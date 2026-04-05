@@ -1,12 +1,10 @@
 import { escapeHtml } from "@kitajs/html"
+import type { PropsWithChildren } from "@kitajs/html"
 
-interface LayoutProps {
+export function Layout({ title, sessionName, children }: PropsWithChildren<{
   title?: string
   sessionName?: string
-  children: string | string[]
-}
-
-export function Layout({ title, sessionName, children }: LayoutProps) {
+}>) {
   const safePageTitle = title
     ? `${escapeHtml(title)} — Pocket Money Tracker`
     : "Pocket Money Tracker"

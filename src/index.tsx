@@ -8,6 +8,7 @@ import { sessionMiddleware } from "./auth/session-middleware"
 import { apiKeyMiddleware } from "./auth/api-key-middleware"
 import { devLoginRoutes } from "./auth/dev-login"
 import { COOKIE_NAME, expiredCookieOptions } from "./auth/session"
+import { childrenHandlers } from "./children/handlers"
 
 const config = loadConfig()
 const db = openDatabase(config.databasePath)
@@ -56,8 +57,7 @@ app.group("/api", (group) =>
 app.group("", (group) =>
   group
     .use(sessionMiddleware(config))
-    // Feature routes will be added in Phases 3-5
-    .get("/", ({ session }) => `Hello ${session.name}! (placeholder)`)
+    .use(childrenHandlers(db, config))
     .post("/auth/logout", ({ cookie, set }) => {
       const opts = expiredCookieOptions(config.devMode)
       const sessionCookie = cookie[COOKIE_NAME]
