@@ -7,6 +7,7 @@ import { logger } from "./logger"
 import { sessionMiddleware } from "./auth/session-middleware"
 import { apiKeyMiddleware } from "./auth/api-key-middleware"
 import { devLoginRoutes } from "./auth/dev-login"
+import { googleOAuthRoutes } from "./auth/google-oauth"
 import { COOKIE_NAME, expiredCookieOptions } from "./auth/session"
 import { childrenHandlers } from "./children/handlers"
 import { transactionHandlers } from "./transactions/handlers"
@@ -41,10 +42,12 @@ const app = new Elysia()
     )
   })
 
-// Dev login routes (no auth) — only in dev mode
+// Auth routes (no session auth) — conditional on DEV_MODE
 if (config.devMode) {
   app.use(devLoginRoutes(config))
   logger.warn("DEV_MODE is enabled — using dev login bypass (ADR-0028)")
+} else {
+  app.use(googleOAuthRoutes(config))
 }
 
 // Backup API routes — API key auth
