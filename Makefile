@@ -41,8 +41,7 @@ db-reset:
 	rm -f data/*.db data/*.db-wal data/*.db-shm
 
 deploy:
-	@echo "Deploy: ssh into the LXC, then:"
-	@echo "  cd /opt/pocket-money"
-	@echo "  git pull"
-	@echo "  bun install"
-	@echo "  sudo systemctl restart pocket-money"
+	git pull
+	bun install
+	$(MAKE) build
+	sudo systemctl restart pocket-money

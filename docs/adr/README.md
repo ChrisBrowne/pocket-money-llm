@@ -33,3 +33,4 @@
 | [0029](0029-structured-logging-with-pino.md) | Structured JSON logging with Pino | Accepted |
 | [0030](0030-htmx-conventions.md) | HTMX conventions: vendored, always-200, OOB in template | Accepted |
 | [0031](0031-https-via-tailscale-serve.md) | HTTPS termination via Tailscale Serve | Accepted |
+| [0032](0032-generated-artifacts-built-on-deploy-host.md) | Generated artifacts built on deploy host, not committed | Accepted |
