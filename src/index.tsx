@@ -21,7 +21,7 @@ const app = new Elysia()
   .use(staticPlugin({ prefix: "/", assets: "public" }))
 
   // Request logging per ADR-0029
-  .onBeforeHandle({ as: "global" }, ({ request, store }) => {
+  .onBeforeHandle({ as: "global" }, ({ store }) => {
     ;(store as any).__requestStart = performance.now()
   })
   .onAfterHandle({ as: "global" }, ({ request, set, store }) => {
@@ -98,7 +98,7 @@ app.group("", (group) =>
     }),
 )
 
-const server = app.listen(config.port)
+const server = app.listen({ hostname: "127.0.0.1", port: config.port })
 
 logger.info(
   {

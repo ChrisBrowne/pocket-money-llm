@@ -32,3 +32,4 @@
 | [0028](0028-dev-mode-auth-bypass.md) | Dev-mode authentication bypass | Accepted |
 | [0029](0029-structured-logging-with-pino.md) | Structured JSON logging with Pino | Accepted |
 | [0030](0030-htmx-conventions.md) | HTMX conventions: vendored, always-200, OOB in template | Accepted |
+| [0031](0031-https-via-tailscale-serve.md) | HTTPS termination via Tailscale Serve | Accepted |
