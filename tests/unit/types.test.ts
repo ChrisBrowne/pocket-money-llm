@@ -1,14 +1,19 @@
 import { describe, expect, test } from "bun:test";
-import { parseChildName, parsePence } from "../../src/shared/types";
+import {
+  parseChildName,
+  parsePence,
+  type ChildName,
+  type Pence,
+} from "../../src/shared/types";
 import { assertOk, assertErr } from "../../src/shared/result";
 
 describe("parseChildName", () => {
   test("accepts a valid name", () => {
-    expect(assertOk(parseChildName("Alice"))).toBe("Alice");
+    expect(assertOk(parseChildName("Alice"))).toBe("Alice" as ChildName);
   });
 
   test("trims whitespace", () => {
-    expect(assertOk(parseChildName("  Alice  "))).toBe("Alice");
+    expect(assertOk(parseChildName("  Alice  "))).toBe("Alice" as ChildName);
   });
 
   test("rejects empty string", () => {
@@ -24,23 +29,23 @@ describe("parseChildName", () => {
 
 describe("parsePence", () => {
   test("converts pounds string to pence", () => {
-    expect(assertOk(parsePence("5.00"))).toBe(500);
+    expect(assertOk(parsePence("5.00"))).toBe(500 as Pence);
   });
 
   test("converts 0.50 to 50 pence", () => {
-    expect(assertOk(parsePence("0.50"))).toBe(50);
+    expect(assertOk(parsePence("0.50"))).toBe(50 as Pence);
   });
 
   test("converts whole number string", () => {
-    expect(assertOk(parsePence("10"))).toBe(1000);
+    expect(assertOk(parsePence("10"))).toBe(1000 as Pence);
   });
 
   test("converts 2.50 to 250 pence", () => {
-    expect(assertOk(parsePence("2.50"))).toBe(250);
+    expect(assertOk(parsePence("2.50"))).toBe(250 as Pence);
   });
 
   test("handles small amounts", () => {
-    expect(assertOk(parsePence("0.01"))).toBe(1);
+    expect(assertOk(parsePence("0.01"))).toBe(1 as Pence);
   });
 
   test("rejects zero", () => {
