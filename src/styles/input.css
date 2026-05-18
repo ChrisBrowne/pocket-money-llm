@@ -639,7 +639,15 @@
     right: 0;
     top: 52%;
     bottom: 0;
-    perspective: 280px;
+    /* Perspective sized so the rotated grid actually reaches the floor's
+       bottom edge at any viewport height. With rotateX(58deg), the bottom
+       edge of the rotated quad projects to an asymptotic screen-y of
+       P × cot(58°) ≈ P × 0.625 from the top of the floor. The floor itself
+       is 48vh tall, so we need P ≥ ~77vh to fill it. 100vh leaves a
+       comfortable margin. The original 280px only filled ~175px regardless
+       of viewport, which on tall windows left most of the floor as empty
+       dark space (looking like the grid wasn't rendering at all). */
+    perspective: 100vh;
     overflow: hidden;
   }
   .strip-backdrop .grid-floor::before {
@@ -665,7 +673,6 @@
       40px 40px,
       100% 40px;
     filter: drop-shadow(0 0 4px rgb(0 224 255 / 0.65));
-    animation: strip-grid-scroll 1.6s linear infinite;
   }
   .strip-backdrop .vignette {
     position: absolute;
@@ -676,20 +683,13 @@
       rgb(0 0 0 / 0.55) 100%
     );
   }
-  @keyframes strip-grid-scroll {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 0 40px;
-    }
-  }
-
-  /* Respect reduced motion — kill flicker, pulse, and grid scroll. */
+  /* Respect reduced motion — kill flicker and pulse. (The grid floor is
+     static, so no animation gating needed there any more — see ADR-0038
+     follow-up: the scroll animation was dropped because it spun fans on
+     low-power devices and the static grid reads visually identical.) */
   @media (prefers-reduced-motion: reduce) {
     .flicker,
-    .strip-pulse,
-    .strip-backdrop .grid-floor::before {
+    .strip-pulse {
       animation: none;
     }
   }
