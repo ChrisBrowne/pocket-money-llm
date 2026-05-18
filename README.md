@@ -78,7 +78,8 @@ make lint        # TypeScript type checking
 | `make lint` | Type check with `tsc --noEmit` |
 | `make clean` | Remove built CSS, databases, and test artifacts |
 | `make db-reset` | Delete local database files |
-| `make deploy` | Print deployment instructions |
+| `make deploy` | Pull, build, and restart on the deploy host (see [deployment.md](docs/deployment.md)) |
+| `make provision` | First-time install of systemd unit, sudoers, and backup cron (deploy host only, root) |
 
 ## Project Structure
 
@@ -101,7 +102,8 @@ tests/
 
 ## Documentation
 
-- **[ADRs](docs/adr/README.md)** — 30 architecture decision records capturing every design choice and its rationale
+- **[ADRs](docs/adr/README.md)** — architecture decision records capturing every design choice and its rationale
 - **[Scenarios](docs/scenarios.md)** — concrete given/when/then examples for every user flow
 - **[Allium Spec](pocket-money.allium)** — formal domain behaviour specification
+- **[Deployment](docs/deployment.md)** — runbook for going from a bare Proxmox host to a running production install
 - **[CLAUDE.md](CLAUDE.md)** — development guidelines and conventions
