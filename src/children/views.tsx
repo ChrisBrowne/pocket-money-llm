@@ -1,6 +1,7 @@
 import { escapeHtml } from "@kitajs/html";
 import { Layout } from "../shared/layout";
 import { formatPence } from "../shared/currency";
+import { computeAge } from "../shared/age";
 import type { ChildWithBalance } from "./commands";
 
 /**
@@ -231,6 +232,7 @@ interface ChildCardProps {
 export function ChildCard({ child, index = 0 }: ChildCardProps) {
   const safeName = escapeHtml(child.name);
   const safeBalance = escapeHtml(formatPence(child.balance));
+  const age = computeAge(child.dob);
   const negative = child.balance < 0;
   const edge = CARD_EDGE_CYCLE[index % CARD_EDGE_CYCLE.length];
   // Map the rotation to the matching balance text class/glow.
@@ -262,11 +264,14 @@ export function ChildCard({ child, index = 0 }: ChildCardProps) {
         {escapeHtml(child.name.charAt(0))}
       </div>
       <div class="flex-1 min-w-0">
-        <p
-          data-testid={`child-name-${safeName}`}
-          class="font-ui text-[1.1875rem] font-semibold text-ink tracking-tight leading-tight truncate"
-        >
-          {safeName}
+        <p class="font-ui text-[1.1875rem] font-semibold text-ink tracking-tight leading-tight truncate">
+          <span data-testid={`child-name-${safeName}`}>{safeName}</span>{" "}
+          <span
+            data-testid={`child-age-${safeName}`}
+            class="font-normal text-dim"
+          >
+            ({String(age) as "safe"})
+          </span>
         </p>
         <p class="font-mono text-[10px] tracking-[0.16em] uppercase text-dim mt-1">
           tap to manage →

@@ -2,6 +2,7 @@ import { escapeHtml } from "@kitajs/html";
 import { Layout } from "../shared/layout";
 import { formatPence } from "../shared/currency";
 import { formatTransactionTime } from "../shared/datetime";
+import { computeAge, formatAgeWords } from "../shared/age";
 import type { ChildWithBalance } from "../children/commands";
 import type { TransactionRow } from "./commands";
 
@@ -63,6 +64,12 @@ export function ChildDetailPage({
         >
           {safeName}
         </h1>
+        <p
+          data-testid="child-age-display"
+          class="font-mono text-[10px] tracking-[0.24em] uppercase text-dim mt-2"
+        >
+          {formatAgeWords(computeAge(child.dob)) as "safe"}
+        </p>
         <p class="font-mono text-[10px] tracking-[0.24em] uppercase text-dim mt-4">
           available balance
         </p>

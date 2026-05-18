@@ -110,3 +110,49 @@ test.describe("Home — Children Ordering", () => {
     expect(names).toEqual(["Dora", "Alice", "Bob", "Charlie"]);
   });
 });
+
+test.describe("Age display", () => {
+  test.beforeEach(async ({ page }) => {
+    await resetDatabase(page);
+    await login(page);
+  });
+
+  test("HomeCardShowsAgeInBrackets", async ({ page }) => {
+    // Pick a dob far enough in the past that the child has had their birthday
+    // this calendar year regardless of when the test runs.
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setUTCFullYear(tenYearsAgo.getUTCFullYear() - 10);
+    tenYearsAgo.setUTCMonth(0, 1); // Jan 1 — well before any test run-date
+    const dob = tenYearsAgo.toISOString().slice(0, 10);
+
+    await addChild(page, "Alice", dob);
+    await page.goto("/");
+    await expect(page.getByTestId("child-age-Alice")).toHaveText("(10)");
+  });
+
+  test("ChildDetailShowsAgeUnderName", async ({ page }) => {
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setUTCFullYear(tenYearsAgo.getUTCFullYear() - 10);
+    tenYearsAgo.setUTCMonth(0, 1);
+    const dob = tenYearsAgo.toISOString().slice(0, 10);
+
+    await addChild(page, "Alice", dob);
+    await page.goto("/children/Alice");
+    await expect(page.getByTestId("child-age-display")).toHaveText(
+      "10 years old",
+    );
+  });
+
+  test("AgeIsPluralisedCorrectlyForOneYearOld", async ({ page }) => {
+    const oneYearAgo = new Date();
+    oneYearAgo.setUTCFullYear(oneYearAgo.getUTCFullYear() - 1);
+    oneYearAgo.setUTCMonth(0, 1);
+    const dob = oneYearAgo.toISOString().slice(0, 10);
+
+    await addChild(page, "Baby", dob);
+    await page.goto("/children/Baby");
+    await expect(page.getByTestId("child-age-display")).toHaveText(
+      "1 year old",
+    );
+  });
+});
