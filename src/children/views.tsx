@@ -11,7 +11,7 @@ interface HomePageProps {
 
 export function HomePage({ sessionName, children }: HomePageProps) {
   return (
-    <Layout title="Home" sessionName={sessionName}>
+    <Layout sessionName={sessionName}>
       <ChildrenList children={children} />
     </Layout>
   );
