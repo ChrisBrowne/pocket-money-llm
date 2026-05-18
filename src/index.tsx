@@ -8,10 +8,16 @@ import { sessionMiddleware } from "./auth/session-middleware";
 import { apiKeyMiddleware } from "./auth/api-key-middleware";
 import { devLoginRoutes } from "./auth/dev-login";
 import { googleOAuthRoutes } from "./auth/google-oauth";
-import { COOKIE_NAME, expiredCookieOptions } from "./auth/session";
+import {
+  COOKIE_NAME,
+  expiredCookieOptions,
+  verifySession,
+} from "./auth/session";
+import { isSome } from "./shared/result";
 import { childrenHandlers } from "./children/handlers";
 import { transactionHandlers } from "./transactions/handlers";
 import { backupHandlers, backupApiHandlers } from "./backup/handlers";
+import { NotFoundPage } from "./shared/not-found";
 
 const config = loadConfig();
 const db = openDatabase(config.databasePath);
@@ -51,7 +57,24 @@ const app = new Elysia()
   .get("/health", () => "<span>ok</span>")
 
   // Top-level error handler per ADR-0013 and ADR-0030
-  .onError({ as: "global" }, ({ error }) => {
+  .onError({ as: "global" }, ({ code, error, cookie, set }) => {
+    if (code === "NOT_FOUND") {
+      // Best-effort session lookup so a logged-in parent landing on a stray
+      // URL still gets the menu/exit chrome instead of a chrome-less page
+      // that looks like a logout. We can't use sessionMiddleware here because
+      // onError runs outside the matched-route pipeline.
+      const signed = cookie[COOKIE_NAME]?.value;
+      const session =
+        typeof signed === "string"
+          ? verifySession(signed, config.cookieSecret)
+          : undefined;
+      const sessionName =
+        session && isSome(session) ? session.value.name : undefined;
+      set.status = 404;
+      set.headers["content-type"] = "text/html";
+      return <NotFoundPage sessionName={sessionName} />;
+    }
+
     logger.error(
       { err: error, stack: (error as Error).stack },
       "Unhandled error",

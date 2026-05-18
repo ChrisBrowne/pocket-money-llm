@@ -177,7 +177,7 @@ export function EmptyState() {
     <div
       data-testid="empty-state"
       class="text-center px-6 py-9 rounded-[18px] mt-2"
-      style="border: 1.5px dashed rgb(255 46 147 / 0.5); background: linear-gradient(135deg, rgb(255 46 147 / 0.07), transparent 70%); box-shadow: 0 0 20px rgb(255 46 147 / 0.25);"
+      style="border: 1.5px dashed rgb(255 46 147 / 0.5); background: linear-gradient(135deg, rgb(255 46 147 / 0.07), transparent 70%); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 0 20px rgb(255 46 147 / 0.25);"
     >
       <p class="font-display text-[1.75rem] leading-none tracking-[0.12em] text-primary glow-primary flicker mb-3">
         Empty vault

@@ -11,15 +11,22 @@ import {
   TransactionItem,
   TransactionError,
 } from "./views";
+import { NotFoundPage } from "../shared/not-found";
 
 export function transactionHandlers(db: Database, config: Config) {
   return new Elysia({ name: "transaction-handlers" })
     .use(sessionMiddleware(config))
     .get("/children/:name", ({ params, session, set }) => {
-      const detail = getChildDetail(db, decodeURIComponent(params.name));
+      const childName = decodeURIComponent(params.name);
+      const detail = getChildDetail(db, childName);
       if (!isSome(detail)) {
         set.status = 404;
-        return "Child not found";
+        return (
+          <NotFoundPage
+            sessionName={session.name}
+            message={`No child named "${childName}" exists in your vault.`}
+          />
+        );
       }
       return (
         <ChildDetailPage

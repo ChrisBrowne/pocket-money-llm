@@ -7,7 +7,7 @@ import { isErr, isNone } from "../shared/result";
 import { addChild, removeChild, listChildren } from "./commands";
 import { getChildDetail } from "../transactions/commands";
 import { HomePage, AddChildPage, ConfirmRemovePage } from "./views";
-import { Layout } from "../shared/layout";
+import { NotFoundPage } from "../shared/not-found";
 
 export function childrenHandlers(db: Database, config: Config) {
   return new Elysia({ name: "children-handlers" })
@@ -55,13 +55,15 @@ export function childrenHandlers(db: Database, config: Config) {
       return "";
     })
     .get("/children/:name/remove", ({ params, session, set }) => {
-      const parsed = parseChildName(decodeURIComponent(params.name));
+      const childName = decodeURIComponent(params.name);
+      const parsed = parseChildName(childName);
       if (isErr(parsed)) {
         set.status = 404;
         return (
-          <Layout title="Not Found" sessionName={session.name}>
-            <p class="text-dim">Child not found.</p>
-          </Layout>
+          <NotFoundPage
+            sessionName={session.name}
+            message={`"${childName}" is not a valid child name.`}
+          />
         );
       }
 
@@ -69,9 +71,10 @@ export function childrenHandlers(db: Database, config: Config) {
       if (isNone(detail)) {
         set.status = 404;
         return (
-          <Layout title="Not Found" sessionName={session.name}>
-            <p class="text-dim">Child not found.</p>
-          </Layout>
+          <NotFoundPage
+            sessionName={session.name}
+            message={`No child named "${childName}" exists in your vault.`}
+          />
         );
       }
 
