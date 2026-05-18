@@ -65,5 +65,4 @@ install-sudoers:
 install-cron:
 	@[ "$$(id -u)" = "0" ] || { echo "install-cron must be run as root (try: sudo make install-cron)"; exit 1; }
 	install -m 644 scripts/backup.cron /etc/cron.d/pocket-money-backup
-	systemctl reload cron
-	@echo "Installed /etc/cron.d/pocket-money-backup and reloaded cron"
+	@echo "Installed /etc/cron.d/pocket-money-backup (cron picks it up within a minute)"

@@ -228,16 +228,17 @@ sudo make -C /opt/pocket-money provision
 
 That target runs `install-systemd-unit`, `install-sudoers`, and `install-cron` in order. Each is idempotent — safe to re-run if you change `scripts/pocket-money.service`, `scripts/deploy.sudoers`, or `scripts/backup.cron` later.
 
-### First-time CSS build and service start
+### First start
 
-`make provision` doesn't build the CSS (that's `make build`) or start the service (the app needs CSS to be present before it serves anything useful):
+`make provision` installs the systemd unit but doesn't build the CSS or start the service. Use `make deploy` for that — it builds the CSS, then restarts the (currently stopped) unit. The same target handles every subsequent code change too — "land code on the box" is always `make deploy`, first time or hundredth.
 
 ```bash
-sudo -u pocket-money make -C /opt/pocket-money build
-systemctl start pocket-money
+sudo -u pocket-money make -C /opt/pocket-money deploy
 systemctl status pocket-money
 journalctl -u pocket-money -n 30 --no-pager
 ```
+
+`git pull` and `bun install` inside the target are no-ops on first run (bootstrap step B.6 already did them); `make build` creates the CSS; `systemctl restart` on a stopped unit starts it just as well as it restarts a running one.
 
 You're looking for a Pino startup line: `port: 3000`, `devMode: false`, the right DB path.
 
