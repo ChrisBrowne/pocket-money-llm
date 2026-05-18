@@ -4,12 +4,13 @@ import type { Config } from "../config";
 import { sessionMiddleware } from "../auth/session-middleware";
 import { isErr } from "../shared/result";
 import { exportBackup, parseBackupFile, restoreBackup } from "./commands";
-import { RestoreSummaryPage, RestoreError } from "./views";
+import { BackupPage, RestoreSummaryPage, RestoreError } from "./views";
 import { Layout } from "../shared/layout";
 
 export function backupHandlers(db: Database, config: Config) {
   return new Elysia({ name: "backup-handlers" })
     .use(sessionMiddleware(config))
+    .get("/backup", ({ session }) => <BackupPage sessionName={session.name} />)
     .get("/backup/export", ({ set }) => {
       const data = exportBackup(db);
       const json = JSON.stringify(data, null, 2);
@@ -32,9 +33,10 @@ export function backupHandlers(db: Database, config: Config) {
       };
       if (!formBody.file) {
         return (
-          <Layout title="Restore Error" sessionName={session.name}>
-            <RestoreError message="No file uploaded" />
-          </Layout>
+          <BackupPage
+            sessionName={session.name}
+            uploadError="No file uploaded"
+          />
         );
       }
 
@@ -44,18 +46,20 @@ export function backupHandlers(db: Database, config: Config) {
         raw = JSON.parse(text);
       } catch {
         return (
-          <Layout title="Restore Error" sessionName={session.name}>
-            <RestoreError message="Invalid JSON file" />
-          </Layout>
+          <BackupPage
+            sessionName={session.name}
+            uploadError="Invalid JSON file"
+          />
         );
       }
 
       const parsed = parseBackupFile(raw);
       if (isErr(parsed)) {
         return (
-          <Layout title="Restore Error" sessionName={session.name}>
-            <RestoreError message={parsed.error.message} />
-          </Layout>
+          <BackupPage
+            sessionName={session.name}
+            uploadError={parsed.error.message}
+          />
         );
       }
 

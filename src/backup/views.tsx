@@ -2,6 +2,76 @@ import { escapeHtml } from "@kitajs/html";
 import { Layout } from "../shared/layout";
 import type { BackupData } from "./schema";
 
+interface BackupPageProps {
+  sessionName: string;
+  uploadError?: string;
+}
+
+export function BackupPage({ sessionName, uploadError }: BackupPageProps) {
+  const safeUploadError = uploadError ? escapeHtml(uploadError) : undefined;
+
+  return (
+    <Layout title="Backup and restore" sessionName={sessionName}>
+      <h1 class="text-2xl font-bold text-gray-800 mb-6">Backup and restore</h1>
+
+      <div class="space-y-8">
+        <section data-testid="backup-export-section">
+          <h2 class="text-lg font-semibold text-gray-700 mb-2">Export</h2>
+          <p class="text-sm text-gray-600 mb-3">
+            Download a JSON file containing all children and transactions.
+          </p>
+          <a
+            href="/backup/export"
+            data-testid="export-backup"
+            class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 underline"
+          >
+            Export Backup
+          </a>
+        </section>
+
+        <section data-testid="backup-restore-section">
+          <h2 class="text-lg font-semibold text-gray-700 mb-2">Restore</h2>
+          <p class="text-sm text-gray-600 mb-3">
+            Upload a previously exported JSON file. This will replace all
+            existing data.
+          </p>
+          <form
+            method="post"
+            action="/backup/restore/upload"
+            enctype="multipart/form-data"
+            data-testid="restore-upload-form"
+            class="flex flex-col gap-2 sm:flex-row sm:items-center"
+          >
+            <input
+              type="file"
+              name="file"
+              accept=".json"
+              required
+              data-testid="restore-file-input"
+              class="text-sm text-gray-500"
+            />
+            <button
+              type="submit"
+              data-testid="restore-upload-button"
+              class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Restore from Backup
+            </button>
+          </form>
+          {safeUploadError && (
+            <p
+              data-testid="restore-upload-error"
+              class="text-sm text-red-600 mt-3"
+            >
+              {safeUploadError}
+            </p>
+          )}
+        </section>
+      </div>
+    </Layout>
+  );
+}
+
 interface RestoreSummaryPageProps {
   sessionName: string;
   data: BackupData;

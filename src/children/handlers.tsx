@@ -5,7 +5,7 @@ import { sessionMiddleware } from "../auth/session-middleware";
 import { parseChildName } from "../shared/types";
 import { isErr } from "../shared/result";
 import { addChild, removeChild, listChildren } from "./commands";
-import { HomePage, ChildrenList, AddChildError } from "./views";
+import { HomePage, AddChildPage } from "./views";
 
 export function childrenHandlers(db: Database, config: Config) {
   return new Elysia({ name: "children-handlers" })
@@ -20,46 +20,37 @@ export function childrenHandlers(db: Database, config: Config) {
         />
       );
     })
-    .post("/children", ({ body }) => {
+    .get("/add-child", ({ session }) => (
+      <AddChildPage sessionName={session.name} />
+    ))
+    .post("/children", ({ body, session, set }) => {
       const raw = (body as { name?: string }).name ?? "";
       const parsed = parseChildName(raw);
 
       if (isErr(parsed)) {
         return (
-          <>
-            <ChildrenList children={listChildren(db)} />
-            <template>
-              <AddChildError message={parsed.error.message} />
-            </template>
-          </>
+          <AddChildPage
+            sessionName={session.name}
+            error={parsed.error.message}
+            value={raw}
+          />
         );
       }
 
       const result = addChild(db, parsed.value);
       if (isErr(result)) {
         return (
-          <>
-            <ChildrenList children={listChildren(db)} />
-            <template>
-              <AddChildError message={result.error.message} />
-            </template>
-          </>
+          <AddChildPage
+            sessionName={session.name}
+            error={result.error.message}
+            value={raw}
+          />
         );
       }
 
-      // Success: return updated list + clear error area
-      return (
-        <>
-          <ChildrenList children={listChildren(db)} />
-          <template>
-            <div
-              id="add-child-errors"
-              hx-swap-oob="true"
-              data-testid="add-child-errors"
-            ></div>
-          </template>
-        </>
-      );
+      set.status = 302;
+      set.headers["location"] = "/";
+      return "";
     })
     .delete("/children/:name", ({ params, set }) => {
       const parsed = parseChildName(decodeURIComponent(params.name));

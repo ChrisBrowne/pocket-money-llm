@@ -37,14 +37,86 @@ export function Layout({
         <meta name="htmx-config" content='{"allowNestedOobSwaps": false}' />
       </head>
       <body class="bg-gray-50 text-gray-900 min-h-screen">
+        {safeSessionName && (
+          <>
+            {/* Backdrop — tap to dismiss the menu */}
+            <div
+              id="menu-backdrop"
+              data-testid="menu-backdrop"
+              onclick="document.getElementById('menu').classList.add('-translate-x-full'); document.getElementById('menu-backdrop').classList.add('hidden');"
+              class="fixed inset-0 bg-black/40 hidden z-40"
+            ></div>
+
+            {/* Slide-in menu panel */}
+            <aside
+              id="menu"
+              data-testid="menu"
+              class="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-white shadow-xl transform -translate-x-full transition-transform duration-200 z-50 flex flex-col"
+            >
+              <div class="flex justify-end p-2 border-b border-gray-200">
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  data-testid="menu-close"
+                  onclick="document.getElementById('menu').classList.add('-translate-x-full'); document.getElementById('menu-backdrop').classList.add('hidden');"
+                  class="text-gray-500 hover:text-gray-700 text-2xl leading-none px-3 py-2"
+                >
+                  ✕
+                </button>
+              </div>
+              <nav class="flex flex-col">
+                <a
+                  href="/add-child"
+                  data-testid="menu-add-child"
+                  class="px-6 py-4 text-gray-800 hover:bg-gray-50 no-underline border-b border-gray-100"
+                >
+                  Add child
+                </a>
+                <a
+                  href="/backup"
+                  data-testid="menu-backup"
+                  class="px-6 py-4 text-gray-800 hover:bg-gray-50 no-underline border-b border-gray-100"
+                >
+                  Backup and restore
+                </a>
+              </nav>
+            </aside>
+          </>
+        )}
+
         <header class="bg-white border-b border-gray-200 px-4 py-3">
           <div class="max-w-lg mx-auto flex items-center justify-between">
-            <a
-              href="/"
-              class="text-lg font-semibold text-gray-800 no-underline"
-            >
-              Pocket Money
-            </a>
+            <div class="flex items-center gap-2">
+              {safeSessionName && (
+                <button
+                  type="button"
+                  aria-label="Open menu"
+                  data-testid="menu-button"
+                  onclick="document.getElementById('menu').classList.remove('-translate-x-full'); document.getElementById('menu-backdrop').classList.remove('hidden');"
+                  class="text-gray-600 hover:text-gray-800 p-2 -ml-2"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  >
+                    <line x1="4" y1="6" x2="20" y2="6" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="18" x2="20" y2="18" />
+                  </svg>
+                </button>
+              )}
+              <a
+                href="/"
+                class="text-lg font-semibold text-gray-800 no-underline"
+              >
+                Pocket Money
+              </a>
+            </div>
             {safeSessionName && (
               <div class="flex items-center gap-3">
                 <span data-testid="session-name" class="text-sm text-gray-600">

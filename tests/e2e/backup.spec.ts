@@ -77,7 +77,7 @@ test.describe("Backup — Restore", () => {
     const tmpFile = path.join(os.tmpdir(), `test-backup-${Date.now()}.json`);
     fs.writeFileSync(tmpFile, JSON.stringify(backupData));
 
-    await page.goto("/");
+    await page.goto("/backup");
     await page.getByTestId("restore-file-input").setInputFiles(tmpFile);
     await page.getByTestId("restore-upload-button").click();
 
@@ -106,11 +106,11 @@ test.describe("Backup — Restore", () => {
     const tmpFile = path.join(os.tmpdir(), `test-invalid-${Date.now()}.json`);
     fs.writeFileSync(tmpFile, "not valid json{{{");
 
-    await page.goto("/");
+    await page.goto("/backup");
     await page.getByTestId("restore-file-input").setInputFiles(tmpFile);
     await page.getByTestId("restore-upload-button").click();
 
-    await expect(page.getByTestId("restore-error")).toBeVisible();
+    await expect(page.getByTestId("restore-upload-error")).toBeVisible();
 
     // Navigate back — Alice should still exist
     await page.goto("/");
@@ -137,11 +137,11 @@ test.describe("Backup — Restore", () => {
     const tmpFile = path.join(os.tmpdir(), `test-extra-${Date.now()}.json`);
     fs.writeFileSync(tmpFile, JSON.stringify(backupData));
 
-    await page.goto("/");
+    await page.goto("/backup");
     await page.getByTestId("restore-file-input").setInputFiles(tmpFile);
     await page.getByTestId("restore-upload-button").click();
 
-    await expect(page.getByTestId("restore-error")).toBeVisible();
+    await expect(page.getByTestId("restore-upload-error")).toBeVisible();
 
     fs.unlinkSync(tmpFile);
   });
@@ -167,11 +167,11 @@ test.describe("Backup — Restore", () => {
     const tmpFile = path.join(os.tmpdir(), `test-orphan-${Date.now()}.json`);
     fs.writeFileSync(tmpFile, JSON.stringify(backupData));
 
-    await page.goto("/");
+    await page.goto("/backup");
     await page.getByTestId("restore-file-input").setInputFiles(tmpFile);
     await page.getByTestId("restore-upload-button").click();
 
-    await expect(page.getByTestId("restore-error")).toBeVisible();
+    await expect(page.getByTestId("restore-upload-error")).toBeVisible();
 
     fs.unlinkSync(tmpFile);
   });
@@ -190,7 +190,7 @@ test.describe("Backup — Restore", () => {
     const tmpFile = path.join(os.tmpdir(), `test-empty-${Date.now()}.json`);
     fs.writeFileSync(tmpFile, JSON.stringify(backupData));
 
-    await page.goto("/");
+    await page.goto("/backup");
     await page.getByTestId("restore-file-input").setInputFiles(tmpFile);
     await page.getByTestId("restore-upload-button").click();
     await page.getByTestId("restore-confirm-button").click();

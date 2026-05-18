@@ -62,6 +62,26 @@ then:  SessionDestroyed(session)
 
 ---
 
+## Navigation
+
+### NavigationMenuReachableFromAnySurface
+
+Every authenticated surface renders the navigation menu in its layout chrome. The menu provides access to AddChild and Backup. Setup-flavoured features live behind the menu so the day-to-day Home view stays focused on the children list.
+
+```
+given: viewer is authenticated
+when:  viewer sees Home
+then:  navigation menu is present
+  and: menu provides link to AddChild
+  and: menu provides link to Backup
+when:  viewer sees ChildDetail(any child)
+then:  navigation menu is present
+  and: menu provides link to AddChild
+  and: menu provides link to Backup
+```
+
+---
+
 ## Home — Viewing Children
 
 ### HomeShowsAllChildrenWithBalances
@@ -84,12 +104,14 @@ A fresh app with no children should make it obvious that the first step is addin
 given: no Children exist
 when:  viewer sees Home
 then:  Home shows no children
-  and: ParentAddsChild action is available
+  and: AddChild surface is reachable via the navigation menu
 ```
 
 ---
 
-## Home — Adding a Child
+## AddChild — Adding a Child
+
+The AddChild surface is reached from the navigation menu. On a successful add the parent is redirected to Home where the new child appears. On a validation error the parent stays on AddChild and sees an inline error.
 
 ### AddChildWithEmptyBalance
 
@@ -361,7 +383,7 @@ then:  not exists Child("Bob")
 
 ### ExportBackupViaBrowser
 
-Parent downloads a JSON backup file from the home page. The file contains all children and transactions.
+Parent downloads a JSON backup file from the Backup surface. The file contains all children and transactions.
 
 ```
 given: Child("Alice", created_at: t1)
@@ -430,7 +452,7 @@ Restore is a two-step flow (destructive operation). Step 1: upload and parse. St
 ```
 given: Child("Alice", balance: 500)                     -- existing data
        valid backup file containing Child("Bob") and 3 transactions
-when:  parent uploads backup file on Home
+when:  parent uploads backup file on Backup
 then:  app shows restore summary:
            children: 1 (Bob)
            transactions: 3

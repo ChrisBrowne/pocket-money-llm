@@ -273,28 +273,64 @@ surface Home {
             child.balance
 
     provides:
-        ParentAddsChild(viewer, name)
-        ParentExportsBackup(viewer)
-        ParentRestoresBackup(viewer, backup)
         ParentLogsOut(viewer.session)
 
     related:
         for child in Children:
             ChildDetail(child)
+        AddChild       -- via navigation menu
+        Backup         -- via navigation menu
 
     @guidance
         -- Balances are displayed as formatted currency (e.g. "£5.00"),
         -- not raw pence. Formatting is a view-layer concern.
         --
+        -- A navigation menu (rendered as layout chrome on every authenticated
+        -- surface) provides links to AddChild and Backup. The setup-flavoured
+        -- features live behind the menu rather than on the Home content area,
+        -- so the day-to-day view stays focused on the children list.
+}
+
+surface AddChild {
+    facing viewer: AuthorisedParent
+
+    provides:
+        ParentAddsChild(viewer, name)
+
+    related:
+        Home
+
+    @guidance
+        -- On successful add, the parent is returned to Home where the new
+        -- child appears in the list. On validation error (empty name,
+        -- whitespace-only name, duplicate name), the error is shown on
+        -- AddChild itself and the parent stays on this surface.
+        -- Reached via the navigation menu from any authenticated surface.
+}
+
+surface Backup {
+    facing viewer: AuthorisedParent
+
+    provides:
+        ParentExportsBackup(viewer)
+        ParentRestoresBackup(viewer, backup)
+
+    related:
+        Home
+
+    @guidance
         -- Export triggers a browser download: "pocket-money-YYYY-MM-DDTHH-MM-SS.json".
+        -- The parent stays on Backup after triggering the download.
         --
         -- Restore is destructive — it wipes all existing data (ADR-0003).
         -- The UI must present a two-step confirmation flow:
         --   1. Parent uploads backup file → app parses and shows a summary
         --      (number of children, number of transactions, export date)
         --   2. Parent explicitly confirms → restore executes
+        --   3. After successful restore, the parent is returned to Home
         -- If parsing fails (invalid format, Zod rejection), show an error
-        -- and do not proceed to the confirmation step.
+        -- on Backup itself and do not proceed to the confirmation step.
+        -- Reached via the navigation menu from any authenticated surface.
 }
 
 surface ChildDetail {

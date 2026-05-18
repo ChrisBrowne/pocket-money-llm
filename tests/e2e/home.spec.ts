@@ -23,7 +23,7 @@ test.describe("Home — Viewing Children", () => {
   });
 });
 
-test.describe("Home — Adding a Child", () => {
+test.describe("AddChild — Adding a Child", () => {
   test.beforeEach(async ({ page }) => {
     await resetDatabase(page);
     await login(page);
@@ -37,7 +37,8 @@ test.describe("Home — Adding a Child", () => {
 
   test("AddChildRejectsDuplicateName", async ({ page }) => {
     await addChild(page, "Alice");
-    // Try adding duplicate
+    // Try adding duplicate — go back to add-child page
+    await page.goto("/add-child");
     await page.getByTestId("add-child-input").fill("Alice");
     await page.getByTestId("add-child-button").click();
     await expect(page.getByTestId("add-child-error")).toBeVisible();
@@ -47,7 +48,7 @@ test.describe("Home — Adding a Child", () => {
   });
 
   test("AddChildRejectsEmptyName", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/add-child");
     await page.getByTestId("add-child-input").fill("   ");
     await page.getByTestId("add-child-button").click();
     await expect(page.getByTestId("add-child-error")).toBeVisible();
@@ -55,7 +56,7 @@ test.describe("Home — Adding a Child", () => {
   });
 
   test("AddChildTrimsWhitespace", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/add-child");
     await page.getByTestId("add-child-input").fill("  Alice  ");
     await page.getByTestId("add-child-button").click();
     await expect(page.getByTestId("child-card-Alice")).toBeVisible();
