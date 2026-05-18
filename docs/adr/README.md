@@ -36,3 +36,4 @@
 | [0032](0032-generated-artifacts-built-on-deploy-host.md)        | Generated artifacts built on deploy host, not committed                         | Accepted |
 | [0033](0033-provisioning-split-runbook-and-makefile.md)         | Provisioning split: runbook for host/interactive, Makefile for repo-installable | Accepted |
 | [0034](0034-handler-modules-declare-middleware-dependencies.md) | Handler modules declare their middleware dependencies via `.use()`              | Accepted |
+| [0035](0035-ci-runs-lint-and-tests.md)                          | CI runs lint and tests on push and PR                                           | Accepted |
