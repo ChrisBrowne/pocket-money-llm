@@ -41,6 +41,12 @@ tailscale serve --bg --https=443 http://127.0.0.1:3000
 
 The Elysia `.listen()` call binds to `127.0.0.1`, not the default `0.0.0.0`. This ensures the unencrypted port is only reachable from the LXC's loopback interface — `tailscale serve` reaches it via loopback, but no other tailnet device can.
 
+#### Dev-mode exception
+
+When `DEV_MODE=true` (ADR-0028), the bind switches to `0.0.0.0`. This is so the app is reachable from other devices on the local network during development — specifically, from a phone on the same Wi-Fi when testing the mobile UI. There is no `tailscale serve` in dev and no TLS to bypass, so the loopback-only constraint has no defence-in-depth role to play; the cost is mobile testing friction with no upside.
+
+The decision to loosen the binding is gated on the same `DEV_MODE` flag that gates the auth bypass (ADR-0028) and the warning logged at startup. Production deployments leave `DEV_MODE` unset (defaults to `false`), so they continue to bind to loopback only.
+
 ### Funnel is forbidden
 
 `tailscale funnel` must not be enabled for this service. ADR-0009's "no public internet exposure" stance is the binding constraint.

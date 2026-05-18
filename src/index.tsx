@@ -104,7 +104,13 @@ app.group("", (group) =>
     }),
 );
 
-const server = app.listen({ hostname: "127.0.0.1", port: config.port });
+// Bind to loopback in production (per ADR-0031) so tailnet devices can't
+// bypass tailscale serve's TLS termination by hitting port 3000 directly.
+// In dev mode bind to 0.0.0.0 so the app is reachable from other devices on
+// the local network (e.g. phones for mobile UI testing) — there is no
+// tailscale serve in dev and no TLS to bypass.
+const hostname = config.devMode ? "0.0.0.0" : "127.0.0.1";
+const server = app.listen({ hostname, port: config.port });
 
 logger.info(
   {
