@@ -7,7 +7,7 @@ import {
   type Result,
   type Option,
 } from "../shared/result";
-import type { ChildName } from "../shared/types";
+import type { ChildName, Birthday } from "../shared/types";
 
 export class DuplicateChildError extends Error {
   constructor(name: string) {
@@ -25,6 +25,7 @@ export class ChildNotFoundError extends Error {
 
 export interface ChildWithBalance {
   name: string;
+  dob: string;
   createdAt: string;
   balance: number;
 }
@@ -32,10 +33,12 @@ export interface ChildWithBalance {
 export function addChild(
   db: Database,
   name: ChildName,
+  dob: Birthday,
 ): Result<void, DuplicateChildError> {
   try {
-    db.run("INSERT INTO children (name, created_at) VALUES (?, ?)", [
+    db.run("INSERT INTO children (name, dob, created_at) VALUES (?, ?, ?)", [
       name,
+      dob,
       new Date().toISOString(),
     ]);
     return ok(undefined);
@@ -60,17 +63,26 @@ export function removeChild(
 
 export function listChildren(db: Database): ChildWithBalance[] {
   return db
-    .query<{ name: string; created_at: string; balance: number | null }, []>(
-      `SELECT c.name, c.created_at,
+    .query<
+      {
+        name: string;
+        dob: string;
+        created_at: string;
+        balance: number | null;
+      },
+      []
+    >(
+      `SELECT c.name, c.dob, c.created_at,
               COALESCE(SUM(CASE WHEN t.kind = 'deposit' THEN t.amount ELSE -t.amount END), 0) AS balance
        FROM children c
        LEFT JOIN transactions t ON t.child_name = c.name
        GROUP BY c.name
-       ORDER BY c.name`,
+       ORDER BY c.dob ASC, c.name ASC`,
     )
     .all()
     .map((row) => ({
       name: row.name,
+      dob: row.dob,
       createdAt: row.created_at,
       balance: row.balance ?? 0,
     }));
@@ -79,10 +91,15 @@ export function listChildren(db: Database): ChildWithBalance[] {
 export function getChild(db: Database, name: string): Option<ChildWithBalance> {
   const row = db
     .query<
-      { name: string; created_at: string; balance: number | null },
+      {
+        name: string;
+        dob: string;
+        created_at: string;
+        balance: number | null;
+      },
       [string]
     >(
-      `SELECT c.name, c.created_at,
+      `SELECT c.name, c.dob, c.created_at,
               COALESCE(SUM(CASE WHEN t.kind = 'deposit' THEN t.amount ELSE -t.amount END), 0) AS balance
        FROM children c
        LEFT JOIN transactions t ON t.child_name = c.name
@@ -95,6 +112,7 @@ export function getChild(db: Database, name: string): Option<ChildWithBalance> {
 
   return some({
     name: row.name,
+    dob: row.dob,
     createdAt: row.created_at,
     balance: row.balance ?? 0,
   });

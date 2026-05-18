@@ -7,7 +7,11 @@ import {
   withdraw,
   getChildDetail,
 } from "../../src/transactions/commands";
-import { parseChildName, parsePence } from "../../src/shared/types";
+import {
+  parseChildName,
+  parsePence,
+  parseBirthday,
+} from "../../src/shared/types";
 import { isOk, isErr, assertOk, isSome, isNone } from "../../src/shared/result";
 import { ChildNotFoundError } from "../../src/children/commands";
 import { unlinkSync } from "node:fs";
@@ -43,13 +47,14 @@ describe("transaction commands", () => {
   });
 
   const alice = assertOk(parseChildName("Alice"));
+  const aliceBday = assertOk(parseBirthday("2015-04-12"));
   const fiveQuid = assertOk(parsePence("5.00"));
   const twoQuid = assertOk(parsePence("2.00"));
   const tenQuid = assertOk(parsePence("10.00"));
 
   test("deposit increases balance", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     const result = deposit(
       db,
       alice,
@@ -69,7 +74,7 @@ describe("transaction commands", () => {
 
   test("withdraw decreases balance", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "pocket money", "topher@example.com");
     withdraw(db, alice, twoQuid, "sweets", "topher@example.com");
 
@@ -81,7 +86,7 @@ describe("transaction commands", () => {
 
   test("negative balance is allowed (ADR-0004)", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, twoQuid, "pocket money", "topher@example.com");
     withdraw(db, alice, fiveQuid, "advance", "topher@example.com");
 
@@ -93,7 +98,7 @@ describe("transaction commands", () => {
 
   test("transactions are ordered newest-first", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "first", "topher@example.com");
     deposit(db, alice, twoQuid, "second", "topher@example.com");
 
@@ -107,7 +112,7 @@ describe("transaction commands", () => {
 
   test("recorded_by is captured", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "test", "sarah@example.com");
 
     const child = getChildDetail(db, "Alice");
@@ -143,7 +148,7 @@ describe("transaction commands", () => {
 
   test("getChildDetail with no transactions shows zero balance", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     const child = getChildDetail(db, "Alice");
     if (isSome(child)) {
       expect(child.value.child.balance).toBe(0);

@@ -21,9 +21,14 @@ export async function resetDatabase(page: Page) {
   });
 }
 
-export async function addChild(page: Page, name: string) {
+export async function addChild(
+  page: Page,
+  name: string,
+  dob: string = "2015-01-01",
+) {
   await page.goto("/add-child");
   await page.getByTestId("add-child-input").fill(name);
+  await page.getByTestId("add-child-dob").fill(dob);
   await page.getByTestId("add-child-button").click();
   // Form submits with 302 → /, then the child card appears in the list
   await page.waitForSelector(`[data-testid="child-card-${name}"]`);

@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import type { Database } from "bun:sqlite";
 import type { Config } from "../config";
 import { sessionMiddleware } from "../auth/session-middleware";
-import { parseChildName } from "../shared/types";
+import { parseChildName, parseBirthday } from "../shared/types";
 import { isErr, isNone } from "../shared/result";
 import { addChild, removeChild, listChildren } from "./commands";
 import { getChildDetail } from "../transactions/commands";
@@ -26,26 +26,42 @@ export function childrenHandlers(db: Database, config: Config) {
       <AddChildPage sessionName={session.name} />
     ))
     .post("/children", ({ body, session, set }) => {
-      const raw = (body as { name?: string }).name ?? "";
-      const parsed = parseChildName(raw);
+      const formBody = body as { name?: string; dob?: string };
+      const rawName = formBody.name ?? "";
+      const rawDob = formBody.dob ?? "";
 
-      if (isErr(parsed)) {
+      const parsedName = parseChildName(rawName);
+      if (isErr(parsedName)) {
         return (
           <AddChildPage
             sessionName={session.name}
-            error={parsed.error.message}
-            value={raw}
+            error={parsedName.error.message}
+            value={rawName}
+            dobValue={rawDob}
           />
         );
       }
 
-      const result = addChild(db, parsed.value);
+      const parsedDob = parseBirthday(rawDob);
+      if (isErr(parsedDob)) {
+        return (
+          <AddChildPage
+            sessionName={session.name}
+            error={parsedDob.error.message}
+            value={rawName}
+            dobValue={rawDob}
+          />
+        );
+      }
+
+      const result = addChild(db, parsedName.value, parsedDob.value);
       if (isErr(result)) {
         return (
           <AddChildPage
             sessionName={session.name}
             error={result.error.message}
-            value={raw}
+            value={rawName}
+            dobValue={rawDob}
           />
         );
       }

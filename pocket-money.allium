@@ -39,6 +39,7 @@ value BackupData {
 
 value ChildSnapshot {
     name: String
+    dob: Timestamp
     created_at: Timestamp
 }
 
@@ -57,6 +58,7 @@ value TransactionSnapshot {
 
 entity Child {
     name: String
+    dob: Timestamp
     created_at: Timestamp
 
     -- Relationships
@@ -70,6 +72,10 @@ entity Child {
         -- trimming. This is a parse-boundary concern (see ADR-0015).
         -- balance is in pence (ADR-0014). £5.00 = 500.
         -- Display formatting (pence → "£X.XX") is a view-layer concern.
+        -- dob is a date-only value (no time component) — Allium has no
+        -- distinct Date type, so it is typed as Timestamp but the time
+        -- portion is not significant. It is parsed and normalised at the
+        -- boundary and is required: every child must have a date of birth.
 }
 
 entity Transaction {
@@ -133,10 +139,10 @@ rule Logout {
 }
 
 rule AddChild {
-    when: ParentAddsChild(session, name)
+    when: ParentAddsChild(session, name, dob)
     requires: session.email in config.allowed_emails
     requires: not exists Child{name: name}
-    ensures: Child.created(name: name, created_at: now)
+    ensures: Child.created(name: name, dob: dob, created_at: now)
 }
 
 rule RemoveChild {
@@ -197,7 +203,7 @@ rule RestoreBackup {
             not exists c
     ensures:
         for c in backup.children:
-            Child.created(name: c.name, created_at: c.created_at)
+            Child.created(name: c.name, dob: c.dob, created_at: c.created_at)
     ensures:
         for t in backup.transactions:
             let child = Child{name: t.child_name}
@@ -296,6 +302,12 @@ surface Home {
         -- single child's balance. The kid count shown alongside the total
         -- ("across N kids") is just Children.count rendered by the view.
         --
+        -- The Children enumeration is displayed ordered by (dob ascending,
+        -- then name ascending): oldest sibling first, with name as the
+        -- alphabetical tie-break for twins/same-dob children. Allium 2 has
+        -- no explicit ordered-relationship syntax (pending ALP), so this is
+        -- documented here as the implementation hook.
+        --
         -- A navigation menu (rendered as layout chrome on every authenticated
         -- surface) provides links to AddChild and Backup. The setup-flavoured
         -- features live behind the menu rather than on the Home content area,
@@ -306,7 +318,7 @@ surface AddChild {
     facing viewer: AuthorisedParent
 
     provides:
-        ParentAddsChild(viewer, name)
+        ParentAddsChild(viewer, name, dob)
 
     related:
         Home
@@ -317,6 +329,8 @@ surface AddChild {
         -- whitespace-only name, duplicate name), the error is shown on
         -- AddChild itself and the parent stays on this surface.
         -- Reached via the navigation menu from any authenticated surface.
+        -- dob is required; the view uses a native date input (no time
+        -- component) and the value is parsed at the boundary.
 }
 
 surface Backup {

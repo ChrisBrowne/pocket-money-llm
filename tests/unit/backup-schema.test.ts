@@ -2,7 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { BackupDataSchema } from "../../src/backup/schema";
 
 const validBackup = {
-  children: [{ name: "Alice", created_at: "2024-01-01T00:00:00.000Z" }],
+  children: [
+    {
+      name: "Alice",
+      dob: "2015-04-12",
+      created_at: "2024-01-01T00:00:00.000Z",
+    },
+  ],
   transactions: [
     {
       child_name: "Alice",
@@ -45,8 +51,22 @@ describe("BackupDataSchema", () => {
       children: [
         {
           name: "Alice",
+          dob: "2015-04-12",
           created_at: "2024-01-01T00:00:00.000Z",
           colour: "blue",
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects child missing dob", () => {
+    const result = BackupDataSchema.safeParse({
+      ...validBackup,
+      children: [
+        {
+          name: "Alice",
+          created_at: "2024-01-01T00:00:00.000Z",
         },
       ],
     });
@@ -63,7 +83,13 @@ describe("BackupDataSchema", () => {
 
   test("rejects orphaned transactions (child_name not in children)", () => {
     const result = BackupDataSchema.safeParse({
-      children: [{ name: "Alice", created_at: "2024-01-01T00:00:00.000Z" }],
+      children: [
+        {
+          name: "Alice",
+          dob: "2015-04-12",
+          created_at: "2024-01-01T00:00:00.000Z",
+        },
+      ],
       transactions: [
         {
           child_name: "Bob",

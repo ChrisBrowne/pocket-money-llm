@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const ChildSnapshotSchema = z.strictObject({
   name: z.string(),
+  dob: z.string(),
   created_at: z.string(),
 });
 

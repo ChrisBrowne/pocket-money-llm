@@ -45,7 +45,13 @@ test.describe("Backup — Restore", () => {
 
     // Create a backup file to upload
     const backupData = {
-      children: [{ name: "Bob", created_at: "2024-01-01T00:00:00.000Z" }],
+      children: [
+        {
+          name: "Bob",
+          dob: "2017-08-23",
+          created_at: "2024-01-01T00:00:00.000Z",
+        },
+      ],
       transactions: [
         {
           child_name: "Bob",
@@ -151,7 +157,13 @@ test.describe("Backup — Restore", () => {
     await login(page);
 
     const backupData = {
-      children: [{ name: "Alice", created_at: "2024-01-01T00:00:00.000Z" }],
+      children: [
+        {
+          name: "Alice",
+          dob: "2015-04-12",
+          created_at: "2024-01-01T00:00:00.000Z",
+        },
+      ],
       transactions: [
         {
           child_name: "Bob",

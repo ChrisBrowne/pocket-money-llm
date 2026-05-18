@@ -5,9 +5,9 @@ import { BackupDataSchema, type BackupData } from "./schema";
 export function exportBackup(db: Database): BackupData {
   const children = db
     .query<
-      { name: string; created_at: string },
+      { name: string; dob: string; created_at: string },
       []
-    >("SELECT name, created_at FROM children ORDER BY name")
+    >("SELECT name, dob, created_at FROM children ORDER BY name")
     .all();
 
   const transactions = db
@@ -62,10 +62,10 @@ export function restoreBackup(
 
     // Insert children
     const insertChild = db.prepare(
-      "INSERT INTO children (name, created_at) VALUES (?, ?)",
+      "INSERT INTO children (name, dob, created_at) VALUES (?, ?, ?)",
     );
     for (const child of data.children) {
-      insertChild.run(child.name, child.created_at);
+      insertChild.run(child.name, child.dob, child.created_at);
     }
 
     // Insert transactions

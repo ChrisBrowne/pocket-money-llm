@@ -81,10 +81,15 @@ export function getChildDetail(
 ): Option<ChildDetail> {
   const childRow = db
     .query<
-      { name: string; created_at: string; balance: number | null },
+      {
+        name: string;
+        dob: string;
+        created_at: string;
+        balance: number | null;
+      },
       [string]
     >(
-      `SELECT c.name, c.created_at,
+      `SELECT c.name, c.dob, c.created_at,
               COALESCE(SUM(CASE WHEN t.kind = 'deposit' THEN t.amount ELSE -t.amount END), 0) AS balance
        FROM children c
        LEFT JOIN transactions t ON t.child_name = c.name
@@ -127,6 +132,7 @@ export function getChildDetail(
   return some({
     child: {
       name: childRow.name,
+      dob: childRow.dob,
       createdAt: childRow.created_at,
       balance: childRow.balance ?? 0,
     },

@@ -8,7 +8,11 @@ import {
   parseBackupFile,
   restoreBackup,
 } from "../../src/backup/commands";
-import { parseChildName, parsePence } from "../../src/shared/types";
+import {
+  parseChildName,
+  parsePence,
+  parseBirthday,
+} from "../../src/shared/types";
 import { isOk, isErr, assertOk } from "../../src/shared/result";
 import { unlinkSync } from "node:fs";
 
@@ -43,11 +47,12 @@ describe("backup commands", () => {
   });
 
   const alice = assertOk(parseChildName("Alice"));
+  const aliceBday = assertOk(parseBirthday("2015-04-12"));
   const fiveQuid = assertOk(parsePence("5.00"));
 
   test("exportBackup produces valid data", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "test", "topher@example.com");
 
     const backup = exportBackup(db);
@@ -67,7 +72,7 @@ describe("backup commands", () => {
 
   test("parseBackupFile accepts valid data", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "test", "topher@example.com");
     const backup = exportBackup(db);
 
@@ -100,11 +105,17 @@ describe("backup commands", () => {
 
   test("restoreBackup wipes and replaces data", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "original", "topher@example.com");
 
     const backupData = {
-      children: [{ name: "Bob", created_at: "2024-01-01T00:00:00.000Z" }],
+      children: [
+        {
+          name: "Bob",
+          dob: "2017-08-23",
+          created_at: "2024-01-01T00:00:00.000Z",
+        },
+      ],
       transactions: [
         {
           child_name: "Bob",
@@ -136,7 +147,7 @@ describe("backup commands", () => {
 
   test("round-trip: export then restore is stable", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "weekly pocket money", "topher@example.com");
 
     const exported = exportBackup(db);
@@ -150,7 +161,7 @@ describe("backup commands", () => {
 
   test("restoreBackup with empty data wipes everything", () => {
     const db = createDb();
-    addChild(db, alice);
+    addChild(db, alice, aliceBday);
     deposit(db, alice, fiveQuid, "test", "topher@example.com");
 
     const emptyBackup = {

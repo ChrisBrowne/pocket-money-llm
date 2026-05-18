@@ -11,6 +11,7 @@ export function openDatabase(path: string): Database {
   db.run(`
     CREATE TABLE IF NOT EXISTS children (
       name       TEXT PRIMARY KEY,
+      dob        TEXT NOT NULL,
       created_at TEXT NOT NULL
     )
   `);

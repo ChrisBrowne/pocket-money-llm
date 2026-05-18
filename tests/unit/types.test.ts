@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   parseChildName,
   parsePence,
+  parseBirthday,
   type ChildName,
   type Pence,
+  type Birthday,
 } from "../../src/shared/types";
 import { assertOk, assertErr } from "../../src/shared/result";
 
@@ -71,5 +73,55 @@ describe("parsePence", () => {
   test("handles 0.00 as zero", () => {
     const error = assertErr(parsePence("0.00"));
     expect(error.message).toBe("Amount must be greater than zero");
+  });
+});
+
+describe("parseBirthday", () => {
+  test("accepts a valid ISO date", () => {
+    expect(assertOk(parseBirthday("2015-04-12"))).toBe(
+      "2015-04-12" as Birthday,
+    );
+  });
+
+  test("trims surrounding whitespace", () => {
+    expect(assertOk(parseBirthday("  2015-04-12  "))).toBe(
+      "2015-04-12" as Birthday,
+    );
+  });
+
+  test("rejects empty string", () => {
+    const error = assertErr(parseBirthday(""));
+    expect(error.message).toBe("Date of birth is required");
+  });
+
+  test("rejects whitespace-only string", () => {
+    const error = assertErr(parseBirthday("   "));
+    expect(error.message).toBe("Date of birth is required");
+  });
+
+  test("rejects non-string input", () => {
+    const error = assertErr(parseBirthday(null));
+    expect(error.message).toBe("Date of birth is required");
+  });
+
+  test("rejects unrecognised format", () => {
+    const error = assertErr(parseBirthday("12/04/2015"));
+    expect(error.message).toBe("Date of birth must be in YYYY-MM-DD format");
+  });
+
+  test("rejects impossible calendar dates (Feb 30)", () => {
+    const error = assertErr(parseBirthday("2025-02-30"));
+    expect(error.message).toBe("Date of birth is not a real date");
+  });
+
+  test("rejects future dates", () => {
+    const future = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
+    const error = assertErr(parseBirthday(future));
+    expect(error.message).toBe("Date of birth cannot be in the future");
+  });
+
+  test("rejects implausibly old dates", () => {
+    const error = assertErr(parseBirthday("1800-01-01"));
+    expect(error.message).toBe("Date of birth is implausibly long ago");
   });
 });

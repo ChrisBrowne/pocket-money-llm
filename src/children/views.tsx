@@ -78,11 +78,18 @@ interface AddChildPageProps {
   sessionName: string;
   error?: string;
   value?: string;
+  dobValue?: string;
 }
 
-export function AddChildPage({ sessionName, error, value }: AddChildPageProps) {
+export function AddChildPage({
+  sessionName,
+  error,
+  value,
+  dobValue,
+}: AddChildPageProps) {
   const safeError = error ? escapeHtml(error) : undefined;
   const safeValue = value ? escapeHtml(value) : "";
+  const safeDobValue = dobValue ? escapeHtml(dobValue) : "";
 
   return (
     <Layout title="Add child" sessionName={sessionName}>
@@ -119,6 +126,17 @@ export function AddChildPage({ sessionName, error, value }: AddChildPageProps) {
               value={safeValue}
               data-testid="add-child-input"
               class="neon-input is-accent is-display"
+            />
+          </label>
+          <label class="block">
+            <span class="neon-input-label is-accent">date of birth</span>
+            <input
+              type="date"
+              name="dob"
+              required
+              value={safeDobValue}
+              data-testid="add-child-dob"
+              class="neon-input is-accent"
             />
           </label>
           {safeError && (

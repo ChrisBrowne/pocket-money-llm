@@ -67,7 +67,7 @@ describe("database", () => {
   test("CHECK constraint rejects zero amount", () => {
     const db = createDb();
     db.run(
-      "INSERT INTO children (name, created_at) VALUES ('Alice', '2024-01-01T00:00:00.000Z')",
+      "INSERT INTO children (name, dob, created_at) VALUES ('Alice', '2015-01-01', '2024-01-01T00:00:00.000Z')",
     );
     expect(() => {
       db.run(
@@ -80,7 +80,7 @@ describe("database", () => {
   test("CHECK constraint rejects negative amount", () => {
     const db = createDb();
     db.run(
-      "INSERT INTO children (name, created_at) VALUES ('Alice', '2024-01-01T00:00:00.000Z')",
+      "INSERT INTO children (name, dob, created_at) VALUES ('Alice', '2015-01-01', '2024-01-01T00:00:00.000Z')",
     );
     expect(() => {
       db.run(
@@ -93,7 +93,7 @@ describe("database", () => {
   test("CHECK constraint rejects invalid kind", () => {
     const db = createDb();
     db.run(
-      "INSERT INTO children (name, created_at) VALUES ('Alice', '2024-01-01T00:00:00.000Z')",
+      "INSERT INTO children (name, dob, created_at) VALUES ('Alice', '2015-01-01', '2024-01-01T00:00:00.000Z')",
     );
     expect(() => {
       db.run(
@@ -106,7 +106,7 @@ describe("database", () => {
   test("ON DELETE CASCADE removes transactions when child is deleted", () => {
     const db = createDb();
     db.run(
-      "INSERT INTO children (name, created_at) VALUES ('Alice', '2024-01-01T00:00:00.000Z')",
+      "INSERT INTO children (name, dob, created_at) VALUES ('Alice', '2015-01-01', '2024-01-01T00:00:00.000Z')",
     );
     db.run(
       `INSERT INTO transactions (child_name, kind, amount, note, recorded_at, recorded_by)
