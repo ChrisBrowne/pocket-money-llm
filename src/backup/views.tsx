@@ -238,7 +238,7 @@ export function RestoreSummaryPage({
         class="flex flex-col gap-3 m-0"
       >
         <textarea name="data" style="display:none" data-testid="restore-data">
-          {encodedData}
+          {encodedData as "safe"}
         </textarea>
         <button
           type="submit"
@@ -285,13 +285,13 @@ function SummaryRow({
   return (
     <div class="flex items-baseline justify-between gap-3">
       <span class="font-mono text-[11px] tracking-[0.12em] uppercase text-dim">
-        {label}
+        {label as "safe"}
       </span>
       <strong
         data-testid={testId}
         class={`font-display ${small ? "text-[1rem]" : "text-[1.875rem]"} leading-none tabular-nums tracking-[0.06em] text-right ${toneClass}`}
       >
-        {value}
+        {value as "safe"}
       </strong>
     </div>
   );

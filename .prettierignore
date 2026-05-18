@@ -4,3 +4,7 @@ public/htmx.min.js
 data/
 test-results/
 bun.lock
+
+# Claude Code per-project settings — gitignored via the user's global git
+# config; not owned by this repo so prettier shouldn't audit them.
+.claude/

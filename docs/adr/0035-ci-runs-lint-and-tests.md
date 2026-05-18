@@ -17,7 +17,7 @@ GitHub Actions is the natural place for this work — the repo is on GitHub, no 
 
 A few specific design choices need recording so the workflow file's shape isn't mysterious:
 
-- **What to run.** `make lint` (tsc + prettier --check) and `make test` (unit + integration) are the obvious set. Playwright e2e tests (`make test-e2e`) cover the HTMX wire, OAuth redirects, and form-submission paths that integration tests do not — worth including even though they're slower.
+- **What to run.** `make lint` (tsc + xss-scan + prettier --check) and `make test` (unit + integration) are the obvious set. Playwright e2e tests (`make test-e2e`) cover the HTMX wire, OAuth redirects, and form-submission paths that integration tests do not — worth including even though they're slower. The `xss-scan` step is the CLI form of `@kitajs/ts-html-plugin` — its editor warnings aren't picked up by `tsc --noEmit`, so without it the K601 unsafe-interpolation check is invisible on CI.
 - **Bun version pinning.** Locally and on CI it's tempting to use "latest", but Bun is the runtime — version drift between CI and production is a real source of confusing "passes locally, fails in CI" bugs. The deployed LXC runs a specific version; CI should match.
 - **Job topology.** `lint-and-test` (~30s) and `e2e` (~90s) can run in parallel as separate jobs. Failures are isolated and reported separately — useful for understanding what's actually broken.
 - **Concurrency.** Pushing two commits in quick succession would otherwise queue two CI runs. The in-flight one is wasted work — cancel it.

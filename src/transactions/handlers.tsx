@@ -81,7 +81,7 @@ export function transactionHandlers(db: Database, config: Config) {
       const latestTx = detail.value.transactions[0];
       return (
         <>
-          {latestTx && <TransactionItem tx={latestTx} />}
+          {latestTx ? <TransactionItem tx={latestTx} /> : null}
           <template>
             <BalanceDisplay balance={detail.value.child.balance} oob={true} />
           </template>
@@ -138,7 +138,7 @@ export function transactionHandlers(db: Database, config: Config) {
       const latestTx = detail.value.transactions[0];
       return (
         <>
-          {latestTx && <TransactionItem tx={latestTx} />}
+          {latestTx ? <TransactionItem tx={latestTx} /> : null}
           <template>
             <BalanceDisplay balance={detail.value.child.balance} oob={true} />
           </template>

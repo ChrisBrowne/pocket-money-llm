@@ -62,8 +62,11 @@ function VaultHero({ kidCount, totalPence, operatorName }: VaultHeroProps) {
         ) : (
           <>
             across{" "}
-            <span class="text-primary font-bold">{String(kidCount)}</span>{" "}
-            {kidCount === 1 ? "kid" : "kids"} · welcome back, {safeOperator}
+            <span class="text-primary font-bold">
+              {String(kidCount) as "safe"}
+            </span>{" "}
+            {kidCount === 1 ? "kid" : "kids"} · welcome back,{" "}
+            {safeOperator as "safe"}
           </>
         )}
       </p>

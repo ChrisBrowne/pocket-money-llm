@@ -55,6 +55,7 @@ test-e2e:
 
 lint:
 	bunx tsc --noEmit
+	bunx xss-scan
 	bunx prettier --check .
 
 format:
