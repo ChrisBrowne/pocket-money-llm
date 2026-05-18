@@ -59,7 +59,7 @@ export function Layout({
                   aria-label="Close menu"
                   data-testid="menu-close"
                   onclick="document.getElementById('menu').classList.add('-translate-x-full'); document.getElementById('menu-backdrop').classList.add('hidden');"
-                  class="text-gray-500 hover:text-gray-700 text-2xl leading-none px-3 py-2"
+                  class="text-gray-500 hover:text-gray-700 text-2xl leading-none px-3 py-2 cursor-pointer"
                 >
                   ✕
                 </button>
@@ -93,7 +93,7 @@ export function Layout({
                   aria-label="Open menu"
                   data-testid="menu-button"
                   onclick="document.getElementById('menu').classList.remove('-translate-x-full'); document.getElementById('menu-backdrop').classList.remove('hidden');"
-                  class="text-gray-600 hover:text-gray-800 p-2 -ml-2"
+                  class="text-gray-600 hover:text-gray-800 p-2 -ml-2 cursor-pointer"
                 >
                   <svg
                     width="24"
@@ -126,7 +126,7 @@ export function Layout({
                   <button
                     type="submit"
                     data-testid="logout-button"
-                    class="text-sm text-gray-500 hover:text-gray-700 underline"
+                    class="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
                   >
                     Logout
                   </button>

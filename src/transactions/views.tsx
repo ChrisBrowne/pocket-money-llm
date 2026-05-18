@@ -1,6 +1,7 @@
 import { escapeHtml } from "@kitajs/html";
 import { Layout } from "../shared/layout";
 import { formatPence } from "../shared/currency";
+import { formatTransactionTime } from "../shared/datetime";
 import type { ChildWithBalance } from "../children/commands";
 import type { TransactionRow } from "./commands";
 
@@ -51,7 +52,7 @@ export function ChildDetailPage({
               name="amount"
               step="0.01"
               min="0.01"
-              placeholder="Amount (£)"
+              value="2.00"
               required
               data-testid="deposit-amount"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -66,7 +67,7 @@ export function ChildDetailPage({
             <button
               type="submit"
               data-testid="deposit-button"
-              class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+              class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors cursor-pointer"
             >
               Deposit
             </button>
@@ -96,14 +97,14 @@ export function ChildDetailPage({
             <input
               type="text"
               name="note"
-              value={escapeHtml(defaultNote)}
+              placeholder="Note (optional)"
               data-testid="withdraw-note"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
             <button
               type="submit"
               data-testid="withdraw-button"
-              class="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors"
+              class="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors cursor-pointer"
             >
               Withdraw
             </button>
@@ -177,39 +178,32 @@ export function TransactionItem({ tx }: { tx: TransactionRow }) {
   return (
     <div
       data-testid={`transaction-${tx.id}`}
-      class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 text-sm"
+      class="flex flex-col gap-1 p-3 bg-white rounded-lg border border-gray-200 text-sm"
     >
-      <span
-        data-testid={`tx-kind-${tx.id}`}
-        class={`px-2 py-0.5 rounded text-xs font-medium ${kindColor}`}
-      >
-        {safeKind}
-      </span>
-      <span
-        data-testid={`tx-amount-${tx.id}`}
-        class={`font-mono font-semibold ${isDeposit ? "text-green-700" : "text-orange-700"}`}
-      >
-        {amountPrefix}
-        {safeAmount}
-      </span>
-      <span
-        data-testid={`tx-note-${tx.id}`}
-        class="text-gray-600 flex-1 truncate"
-      >
-        {safeNote}
-      </span>
-      <span
-        data-testid={`tx-recorded-by-${tx.id}`}
-        class="text-gray-400 text-xs hidden sm:inline"
-      >
-        {safeRecordedBy}
-      </span>
-      <span
-        data-testid={`tx-recorded-at-${tx.id}`}
-        class="text-gray-400 text-xs hidden sm:inline"
-      >
-        {escapeHtml(tx.recordedAt)}
-      </span>
+      <div class="flex items-center gap-3">
+        <span
+          data-testid={`tx-kind-${tx.id}`}
+          class={`px-2 py-0.5 rounded text-xs font-medium ${kindColor}`}
+        >
+          {safeKind}
+        </span>
+        <span
+          data-testid={`tx-amount-${tx.id}`}
+          class={`font-mono font-semibold ${isDeposit ? "text-green-700" : "text-orange-700"}`}
+        >
+          {amountPrefix}
+          {safeAmount}
+        </span>
+        <span data-testid={`tx-note-${tx.id}`} class="text-gray-600 flex-1">
+          {safeNote}
+        </span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-gray-400">
+        <span data-testid={`tx-recorded-by-${tx.id}`}>{safeRecordedBy}</span>
+        <span data-testid={`tx-recorded-at-${tx.id}`} class="ml-auto">
+          {escapeHtml(formatTransactionTime(tx.recordedAt))}
+        </span>
+      </div>
     </div>
   );
 }

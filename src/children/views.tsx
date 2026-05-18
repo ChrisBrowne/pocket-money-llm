@@ -114,13 +114,13 @@ export function ChildCard({ child }: ChildCardProps) {
     >
       <span
         data-testid={`child-name-${safeName}`}
-        class="font-medium text-gray-800"
+        class="text-xl font-medium text-gray-800"
       >
         {safeName}
       </span>
       <span
         data-testid={`child-balance-${safeName}`}
-        class={`font-mono font-semibold ${balanceColor}`}
+        class={`text-xl font-mono font-semibold ${balanceColor}`}
       >
         {safeBalance}
       </span>

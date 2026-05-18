@@ -350,7 +350,7 @@ surface ChildDetail {
 
     provides:
         ParentDeposits(viewer, child, amount, note default config.default_note)
-        ParentWithdraws(viewer, child, amount, note default config.default_note)
+        ParentWithdraws(viewer, child, amount, note)
         ParentRemovesChild(viewer, child)
 
     @guidance
