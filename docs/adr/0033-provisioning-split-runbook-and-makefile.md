@@ -14,13 +14,13 @@ A clean split also makes the README easier to maintain. Runbook content stays in
 
 Provisioning is split into five categories, each with a fixed home:
 
-| Category | Shape | Home |
-|---|---|---|
-| **A. Proxmox host** (LXC creation, network config, TUN exposure, share mounts, bind mounts in LXC conf) | runbook | README |
-| **B. In-LXC, pre-clone bootstrap** (apt installs, Bun installer, Tailscale install + auth, `tailscale serve`, user + directory creation, `git clone`) | runbook | README |
-| **C. In-LXC, post-clone one-time install** (systemd unit, sudoers, cron) | Makefile targets | repo |
-| **D. Web UI / interactive auth** (Tailnet admin HTTPS enable, Google Cloud Console OAuth client, `.env` secret values) | runbook | README |
-| **E. Regular ops** (deploy, future log/backup convenience targets) | Makefile targets | repo |
+| Category                                                                                                                                              | Shape            | Home   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------ |
+| **A. Proxmox host** (LXC creation, network config, TUN exposure, share mounts, bind mounts in LXC conf)                                               | runbook          | README |
+| **B. In-LXC, pre-clone bootstrap** (apt installs, Bun installer, Tailscale install + auth, `tailscale serve`, user + directory creation, `git clone`) | runbook          | README |
+| **C. In-LXC, post-clone one-time install** (systemd unit, sudoers, cron)                                                                              | Makefile targets | repo   |
+| **D. Web UI / interactive auth** (Tailnet admin HTTPS enable, Google Cloud Console OAuth client, `.env` secret values)                                | runbook          | README |
+| **E. Regular ops** (deploy, future log/backup convenience targets)                                                                                    | Makefile targets | repo   |
 
 ### Category C convention
 
@@ -33,7 +33,7 @@ Provisioning is split into five categories, each with a fixed home:
 ### What stays out
 
 - **Category A** cannot be scripted from this repo without dragging Proxmox-host scripting into a single-LXC repo. Stays as runbook.
-- **Category B** cannot be scripted *until* the repo is cloned, by definition. Stays as runbook.
+- **Category B** cannot be scripted _until_ the repo is cloned, by definition. Stays as runbook.
 - **Category D** involves Web UIs and secrets. Stays as runbook.
 - The pre-clone bootstrap of Bun, Tailscale, and apt packages is not in scope for `make provision` — `make` may not even exist on the LXC before this point.
 

@@ -1,21 +1,31 @@
-import type { Database } from "bun:sqlite"
-import { ok, err, some, none, type Result, type Option } from "../shared/result"
-import { ChildNotFoundError, type ChildWithBalance } from "../children/commands"
-import type { ChildName, Pence } from "../shared/types"
+import type { Database } from "bun:sqlite";
+import {
+  ok,
+  err,
+  some,
+  none,
+  type Result,
+  type Option,
+} from "../shared/result";
+import {
+  ChildNotFoundError,
+  type ChildWithBalance,
+} from "../children/commands";
+import type { ChildName, Pence } from "../shared/types";
 
 export interface TransactionRow {
-  id: number
-  childName: string
-  kind: "deposit" | "withdrawal"
-  amount: number
-  note: string
-  recordedAt: string
-  recordedBy: string
+  id: number;
+  childName: string;
+  kind: "deposit" | "withdrawal";
+  amount: number;
+  note: string;
+  recordedAt: string;
+  recordedBy: string;
 }
 
 export interface ChildDetail {
-  child: ChildWithBalance
-  transactions: TransactionRow[]
+  child: ChildWithBalance;
+  transactions: TransactionRow[];
 }
 
 export function deposit(
@@ -27,16 +37,19 @@ export function deposit(
 ): Result<void, ChildNotFoundError> {
   // Check child exists
   const child = db
-    .query<{ name: string }, [string]>("SELECT name FROM children WHERE name = ?")
-    .get(childName)
-  if (!child) return err(new ChildNotFoundError(childName))
+    .query<
+      { name: string },
+      [string]
+    >("SELECT name FROM children WHERE name = ?")
+    .get(childName);
+  if (!child) return err(new ChildNotFoundError(childName));
 
   db.run(
     `INSERT INTO transactions (child_name, kind, amount, note, recorded_at, recorded_by)
      VALUES (?, 'deposit', ?, ?, ?, ?)`,
     [childName, amount, note, new Date().toISOString(), recordedBy],
-  )
-  return ok(undefined)
+  );
+  return ok(undefined);
 }
 
 export function withdraw(
@@ -47,16 +60,19 @@ export function withdraw(
   recordedBy: string,
 ): Result<void, ChildNotFoundError> {
   const child = db
-    .query<{ name: string }, [string]>("SELECT name FROM children WHERE name = ?")
-    .get(childName)
-  if (!child) return err(new ChildNotFoundError(childName))
+    .query<
+      { name: string },
+      [string]
+    >("SELECT name FROM children WHERE name = ?")
+    .get(childName);
+  if (!child) return err(new ChildNotFoundError(childName));
 
   db.run(
     `INSERT INTO transactions (child_name, kind, amount, note, recorded_at, recorded_by)
      VALUES (?, 'withdrawal', ?, ?, ?, ?)`,
     [childName, amount, note, new Date().toISOString(), recordedBy],
-  )
-  return ok(undefined)
+  );
+  return ok(undefined);
 }
 
 export function getChildDetail(
@@ -75,20 +91,20 @@ export function getChildDetail(
        WHERE c.name = ?
        GROUP BY c.name`,
     )
-    .get(name)
+    .get(name);
 
-  if (!childRow) return none()
+  if (!childRow) return none();
 
   const transactions = db
     .query<
       {
-        id: number
-        child_name: string
-        kind: string
-        amount: number
-        note: string
-        recorded_at: string
-        recorded_by: string
+        id: number;
+        child_name: string;
+        kind: string;
+        amount: number;
+        note: string;
+        recorded_at: string;
+        recorded_by: string;
       },
       [string]
     >(
@@ -106,7 +122,7 @@ export function getChildDetail(
       note: row.note,
       recordedAt: row.recorded_at,
       recordedBy: row.recorded_by,
-    }))
+    }));
 
   return some({
     child: {
@@ -115,5 +131,5 @@ export function getChildDetail(
       balance: childRow.balance ?? 0,
     },
     transactions,
-  })
+  });
 }

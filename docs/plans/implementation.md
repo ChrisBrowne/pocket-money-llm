@@ -59,6 +59,7 @@ Makefile
 **Goal**: Bun project that starts, loads config, connects to SQLite, and has foundational types. Everything testable from day one.
 
 ### 1.1 -- Project initialisation
+
 - `bun init` for `package.json` + `tsconfig.json`
 - Dependencies: `elysia`, `@elysiajs/html`, `@elysiajs/static`, `pino`, `zod`
 - Dev dependencies: `pino-pretty`, `@tailwindcss/cli`, `@types/bun`, `@kitajs/ts-html-plugin`
@@ -74,21 +75,26 @@ Makefile
 - Update `.gitignore` with `node_modules/`, `.env`, `data/`, `*.db`, `public/styles.css`
 
 ### 1.2 -- Result and Option types (`src/shared/result.ts`)
+
 Per ADR-0012:
+
 - `Result<T, E extends Error>` -- discriminated union, `ok(v)`, `err(e)`, `isOk()`, `isErr()`, `assertOk()`, `assertErr()`
 - `Option<T>` -- discriminated union, `some(v)`, `none()`, `isSome()`, `isNone()`
 - **Unit tests**: constructors, guards narrow types, assertions throw on mismatch
 
 ### 1.3 -- Branded types (`src/shared/types.ts`)
+
 - `ChildName` -- branded string, `parseChildName(raw: string): Result<ChildName, Error>` (trims, rejects empty)
 - `Pence` -- branded positive integer, `parsePence(raw: unknown): Result<Pence, Error>` (accepts string like "5.00", converts to 500)
 - **Unit tests**: valid inputs pass, whitespace-only names rejected, zero/negative amounts rejected, "5.00" -> 500, "0.50" -> 50
 
 ### 1.4 -- Currency display (`src/shared/currency.ts`)
+
 - `formatPence(pence: number): string` -- 500 -> "£5.00", -200 -> "-£2.00", 50 -> "£0.50"
 - **Unit tests**: cover all values from the AmountsDisplayedAsPoundsAndPence scenario
 
 ### 1.5 -- Config (`src/config.ts`)
+
 - Parse all env vars from the Allium config block
 - `ALLOWED_EMAILS` -> `Set<string>`, `PORT` defaults 3000, `DEV_MODE` boolean, `DEFAULT_NOTE` defaults "weekly pocket money"
 - Fail fast listing all missing required vars
@@ -97,11 +103,13 @@ Per ADR-0012:
 - **Integration tests**: complete env works, missing required var throws, DEV_MODE skips Google vars
 
 ### 1.6 -- Logger (`src/logger.ts`)
+
 - Pino instance, JSON output
 - Startup log: port, database path, dev mode status (never secrets)
 - Dev mode warning per ADR-0028
 
 ### 1.7 -- Database (`src/db.ts`)
+
 - Open SQLite at `DATABASE_PATH` via `bun:sqlite`
 - Module-level singleton: `export const db = new Database(config.databasePath)` -- imported directly by command modules, passed as argument to command functions
 - Pragmas (run immediately after opening):
@@ -116,6 +124,7 @@ Per ADR-0012:
 - **Integration tests**: tables exist, FK constraint enforced (insert transaction with nonexistent child_name fails), CHECK constraint enforced (amount <= 0 fails), CASCADE works (delete child removes transactions)
 
 ### 1.8 -- Makefile (initial targets)
+
 - `install` -- `bun install`
 - `css` -- `bunx @tailwindcss/cli -i src/styles/input.css -o public/styles.css --minify`
 - `css-watch` -- same with `--watch` flag
@@ -128,6 +137,7 @@ Per ADR-0012:
 - `clean` -- remove dev DB files and `public/styles.css`
 
 ### Verification
+
 `make install && make test` passes. `make dev` starts the server (404 on all routes -- no routes yet).
 
 ---
@@ -137,6 +147,7 @@ Per ADR-0012:
 **Goal**: Session cookies, middleware, dev login. The app authenticates users in dev mode.
 
 ### 2.1 -- Session cookie (`src/auth/session.ts`)
+
 - `Session` type: `{ email: string; name: string }`
 - `signSession(session, secret): string` -- JSON -> HMAC-SHA256 sign -> `base64(json).base64(hmac)`
 - `verifySession(cookie, secret): Option<Session>` -- verify HMAC, parse JSON
@@ -149,6 +160,7 @@ Per ADR-0012:
 - **Integration tests**: round-trip, tampered cookie -> none, empty -> none, cookie attributes present
 
 ### 2.2 -- Session middleware (`src/auth/session-middleware.ts`)
+
 - Elysia plugin using `derive` to extract session from cookie (per-request, since it depends on the request cookie)
 - Reads cookie, verifies signature, checks email in `allowed_emails`
 - Success: derives `session: Session` into handler context
@@ -157,16 +169,19 @@ Per ADR-0012:
 - **Integration tests**: valid cookie passes, tampered redirects, email not in whitelist redirects, cross-origin POST rejected
 
 ### 2.3 -- API key middleware (`src/auth/api-key-middleware.ts`)
+
 - Reads `Authorization: Bearer <key>`, compares to `config.backup_api_key`
 - Comparison must be timing-safe: use `crypto.timingSafeEqual` from `node:crypto` (prevents key length leakage via timing side-channel)
 - Failure: 401 Unauthorized
 
 ### 2.4 -- Dev login (`src/auth/dev-login.tsx`)
+
 - `GET /dev/login` -- renders allowed emails as clickable options
 - `POST /dev/login` -- accepts email, sets signed cookie, redirects to `/`
 - Only registered when `DEV_MODE=true`
 
 ### 2.5 -- Base layout (`src/shared/layout.tsx`)
+
 - HTML document: `<script src="/htmx.min.js">` (vendored, no CDN), `<link>` to `/styles.css` (built Tailwind output)
 - HTMX config: `<meta name="htmx-config" content='{"allowNestedOobSwaps": false}'>` -- OOB swaps only processed on response siblings, not descendants (prevents accidental extraction from reused fragments)
 - `<div id="global-error"></div>` for OOB error swaps (ADR-0013)
@@ -174,6 +189,7 @@ Per ADR-0012:
 - All dynamic content in TSX views must be escaped via `@kitajs/html` safe patterns (enforced by `@kitajs/ts-html-plugin` at compile time)
 
 ### 2.6 -- App entrypoint (`src/index.tsx`)
+
 - Create Elysia app, import config, logger, and db as module singletons
 - Register `@elysiajs/static` for `public/` directory
 - Session middleware group: UI routes protected by session `derive` + `beforeHandle` guard
@@ -188,6 +204,7 @@ Per ADR-0012:
 - Listen on `config.port`
 
 ### Verification
+
 `make dev` starts app. Visiting `/` redirects to `/dev/login`. Clicking an email sets cookie and redirects to `/` (bare layout). All tests pass.
 
 ---
@@ -197,6 +214,7 @@ Per ADR-0012:
 **Goal**: Home page with child listing, add child, remove child. First feature through all layers.
 
 ### 3.1 -- Commands (`src/children/commands.ts`)
+
 - `addChild(db, name: ChildName): Result<void, DuplicateChildError>` -- INSERT, catch UNIQUE violation
 - `removeChild(db, name: ChildName): Result<void, ChildNotFoundError>` -- DELETE (CASCADE), check rows affected
 - `listChildren(db): ChildWithBalance[]` -- LEFT JOIN with SUM for derived balance
@@ -204,6 +222,7 @@ Per ADR-0012:
 - **Integration tests**: add, list with balance 0, duplicate fails, remove, list empty, remove nonexistent fails
 
 ### 3.2 -- Views (`src/children/views.tsx`)
+
 - `HomePage` -- children list, add form, export/restore (wired in Phase 5), logout
 - `ChildCard` -- name, formatted balance, link to detail, `data-testid="child-card-{name}"`
 - `AddChildForm` -- `hx-post="/children"`, `hx-target="#children-list"`, `data-testid="add-child-form"`
@@ -211,11 +230,13 @@ Per ADR-0012:
 - Error partials for duplicate name, empty name
 
 ### 3.3 -- Handlers (`src/children/handlers.ts`)
+
 - `GET /` -- listChildren -> HomePage (full page)
 - `POST /children` -- parse name -> addChild -> return updated children list partial (`hx-target="#children-list"`, `hx-swap="innerHTML"`). On error (duplicate name, empty name): return error partial targeting the form's error area. All responses HTTP 200.
 - `DELETE /children/:name` -- parse name -> removeChild -> return 200 with `HX-Redirect: /` header
 
 ### Verification
+
 `make dev`, log in, see empty state. Add "Alice" (£0.00). Add duplicate "Alice" (error). Add "Bob". Remove "Bob". All integration tests pass.
 
 ---
@@ -225,6 +246,7 @@ Per ADR-0012:
 **Goal**: Deposit, withdraw, transaction history, balance.
 
 ### 4.1 -- Commands (`src/transactions/commands.ts`)
+
 - `deposit(db, childName, amount: Pence, note, recordedBy): Result<void, ChildNotFoundError>`
 - `withdraw(db, childName, amount: Pence, note, recordedBy): Result<void, ChildNotFoundError>`
 - `getChildDetail(db, name): Option<{ child: ChildWithBalance, transactions: TransactionRow[] }>`
@@ -232,6 +254,7 @@ Per ADR-0012:
 - **Integration tests**: deposit increases balance, withdraw decreases, negative balance allowed (ADR-0004), newest-first ordering, recorded_by captured
 
 ### 4.2 -- Views (`src/transactions/views.tsx`)
+
 - `ChildDetailPage` -- name, balance, transaction list, deposit/withdraw forms, remove button
 - `TransactionList` -- each row: kind, amount (formatted), note, recorded_at, recorded_by, `data-testid`
 - `DepositForm` -- amount (type="number" step="0.01" in pounds), note (pre-filled with default), `data-testid="deposit-form"`
@@ -239,6 +262,7 @@ Per ADR-0012:
 - `BalanceDisplay` -- `data-testid="balance-display"`
 
 ### 4.3 -- Handlers (`src/transactions/handlers.ts`)
+
 - `GET /children/:name` -- getChildDetail -> ChildDetailPage (full page, or 404)
 - `POST /children/:name/deposit` -- parse amount + note -> deposit -> return new transaction row targeting `#transaction-list` (`hx-swap="afterbegin"`) PLUS OOB swap for balance display (`#balance-display`), both wrapped in `<template>`. On validation error (zero/negative amount): return error partial targeting the deposit form's error area. All responses HTTP 200.
 - `POST /children/:name/withdraw` -- same pattern as deposit
@@ -246,6 +270,7 @@ Per ADR-0012:
 **Parse boundary**: user enters pounds ("5.00"), `parsePence` converts to integer pence (500). Downstream everything is integer.
 
 ### Verification
+
 Deposit £5.00 -> balance £5.00, transaction visible. Withdraw £2.00 -> £3.00. Withdraw £10.00 -> -£7.00. Zero amount rejected. All integration tests pass.
 
 ---
@@ -255,36 +280,45 @@ Deposit £5.00 -> balance £5.00, transaction visible. Withdraw £2.00 -> £3.00
 **Goal**: Export and restore through browser UI and API.
 
 ### 5.1 -- Zod schema (`src/backup/schema.ts`)
+
 Per ADR-0023:
+
 - `BackupDataSchema` -- `z.strictObject` (no passthrough), `.refine()` for referential integrity (every transaction.child_name in children array)
 - **Unit tests**: valid passes, extra fields rejected, orphaned transactions rejected
 
 ### 5.2 -- Commands (`src/backup/commands.ts`)
+
 - `exportBackup(db): BackupData`
 - `parseBackupFile(raw: unknown): Result<BackupData, Error>` -- Zod parse
 - `restoreBackup(db, data: BackupData): Result<void, Error>` -- within SQLite transaction: DELETE all, INSERT children, INSERT transactions
 - **Integration tests**: export valid, restore wipes + replaces, round-trip stable
 
 ### 5.3 -- Views (`src/backup/views.tsx`)
+
 - `ExportButton` -- `data-testid="export-backup"`
 - `RestoreUploadForm` -- file input, `hx-post="/backup/restore/upload"`, `data-testid="restore-upload-form"`
 - `RestoreSummary` -- child count, transaction count, exported_at, confirm button, `data-testid="restore-summary"`
 
 ### 5.4 -- Handlers (`src/backup/handlers.ts`)
+
 **UI routes** (session middleware):
+
 - `GET /backup/export` -- Content-Disposition: `pocket-money-YYYY-MM-DDTHH-MM-SS.json`
 - `POST /backup/restore/upload` -- parse file with Zod -> RestoreSummary (embed raw JSON base64 in hidden form field) or error
 - `POST /backup/restore/confirm` -- re-parse from hidden field -> restoreBackup -> redirect home
 
 **API route** (API key middleware):
+
 - `GET /api/backup` -- exportBackup -> JSON
 
 **Two-step restore**: upload returns summary HTML with hidden `<textarea>` containing base64-encoded JSON. Confirm re-parses with Zod before executing. No server-side temp state.
 
 ### 5.5 -- Wire into home page
+
 Add ExportButton and RestoreUploadForm to HomePage view.
 
 ### Verification
+
 Export downloads JSON. Upload valid file -> summary. Confirm -> data replaced. Upload invalid -> error, no data loss. API with valid key returns JSON, invalid key returns 401.
 
 ---
@@ -294,14 +328,17 @@ Export downloads JSON. Upload valid file -> summary. Confirm -> data replaced. U
 **Goal**: Real OAuth flow for production.
 
 ### 6.1 -- OAuth routes (`src/auth/google-oauth.ts`)
+
 - `GET /auth/google` -- redirect to Google consent screen
 - `GET /auth/callback` -- exchange code for tokens via raw `fetch()` to Google's token and userinfo endpoints (no OAuth library -- minimal dependency philosophy), extract email + name, check whitelist, sign session cookie or reject
 - Only registered when `DEV_MODE` is not true
 
 ### 6.2 -- Logout handler
+
 - `POST /auth/logout` -- clear cookie (expired), redirect to `/`
 
 ### Verification
+
 With real Google credentials and `DEV_MODE=false`, full OAuth flow works. Unauthorised email rejected. Logout clears session.
 
 ---
@@ -311,6 +348,7 @@ With real Google credentials and `DEV_MODE=false`, full OAuth flow works. Unauth
 **Goal**: Full coverage of all scenarios from `docs/scenarios.md`.
 
 ### 7.1 -- Setup
+
 - Install `@playwright/test`
 - `playwright.config.ts`:
   - Per-worker server instances: each worker starts its own app with unique `DATABASE_PATH` and `PORT`
@@ -331,6 +369,7 @@ Every scenario in `docs/scenarios.md` is covered. API key scenarios are integrat
 - `tests/integration/backup-api.test.ts` -- ExportBackupViaApiKey, ExportBackupApiRejectsInvalidKey, ExportBackupApiRejectsMissingKey (these call the API directly, no browser)
 
 ### Verification
+
 `make test-e2e` passes all scenarios. Tests run in parallel with isolated databases.
 
 ---
@@ -338,25 +377,34 @@ Every scenario in `docs/scenarios.md` is covered. API key scenarios are integrat
 ## Phase 8: Polish and Deployment
 
 ### 8.1 -- Tailwind styling
+
 - Style all views (responsive for mobile -- parents use this on phones)
 - Negative balances in red
 - Clean visual hierarchy: cards, tables, forms, errors
 - CSS built via `make css`, watched during dev via `make dev`
 
 ### 8.2 -- Request logging
+
 - Elysia lifecycle hooks: method, path, status, duration at info level (ADR-0029)
 
 ### 8.3 -- Graceful shutdown
+
 - Handle `SIGTERM` (sent by `systemctl stop`): stop Elysia server, close SQLite connection, exit cleanly
 - ```ts
-  process.on("SIGTERM", () => { server.stop(); db.close(); process.exit(0) })
+  process.on("SIGTERM", () => {
+    server.stop();
+    db.close();
+    process.exit(0);
+  });
   ```
 
 ### 8.4 -- Deployment artifacts
+
 - `pocket-money.service` -- systemd unit file
 - Makefile target: `deploy` (documents the SSH + git pull + restart flow)
 
 ### 8.5 -- Final Makefile targets
+
 `install`, `css`, `css-watch`, `build`, `dev`, `start`, `test`, `test-unit`, `test-integration`, `test-e2e`, `lint` (`tsc --noEmit` -- also runs `@kitajs/ts-html-plugin` checks), `clean`, `db-reset`, `deploy`
 
 ---

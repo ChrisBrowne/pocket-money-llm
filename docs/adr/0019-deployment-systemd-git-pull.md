@@ -15,6 +15,7 @@ The app runs on a Proxmox LXC (ADR-0009). It needs a process manager to keep it 
 - **LXC provisioning**: Manual. Install Bun, install Tailscale, clone the repo, create the systemd unit, set env vars.
 
 ## Consequences
+
 - Zero infrastructure beyond the LXC itself
 - Deployment is one SSH command
 - No container registry, no image builds, no orchestrator

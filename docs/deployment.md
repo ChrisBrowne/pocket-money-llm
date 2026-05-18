@@ -198,16 +198,16 @@ openssl rand -base64 32       # → BACKUP_API_KEY
 
 Edit `/opt/pocket-money/.env` as root (file is owned by `pocket-money`, but root can write):
 
-| Variable | Value |
-|---|---|
-| `DATABASE_PATH` | `/var/lib/pocket-money/pocket-money.db` |
-| `COOKIE_SECRET` | first `openssl` output |
-| `BACKUP_API_KEY` | second `openssl` output |
-| `ALLOWED_EMAILS` | comma-separated emails — must include every authorised parent |
-| `GOOGLE_CLIENT_ID` | from D.2 |
-| `GOOGLE_CLIENT_SECRET` | from D.2 |
-| `GOOGLE_REDIRECT_URI` | `https://<magicdns-hostname>/auth/callback` |
-| `DEV_MODE` | leave commented (defaults to `false`) |
+| Variable               | Value                                                         |
+| ---------------------- | ------------------------------------------------------------- |
+| `DATABASE_PATH`        | `/var/lib/pocket-money/pocket-money.db`                       |
+| `COOKIE_SECRET`        | first `openssl` output                                        |
+| `BACKUP_API_KEY`       | second `openssl` output                                       |
+| `ALLOWED_EMAILS`       | comma-separated emails — must include every authorised parent |
+| `GOOGLE_CLIENT_ID`     | from D.2                                                      |
+| `GOOGLE_CLIENT_SECRET` | from D.2                                                      |
+| `GOOGLE_REDIRECT_URI`  | `https://<magicdns-hostname>/auth/callback`                   |
+| `DEV_MODE`             | leave commented (defaults to `false`)                         |
 
 Lock down the file (secrets):
 

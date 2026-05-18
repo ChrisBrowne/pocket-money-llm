@@ -13,6 +13,7 @@ This project is being designed through conversational sessions. Decisions made i
 Use Architecture Decision Records (Nygard format) stored in `docs/adr/`. Every decision that affects future work gets an ADR. Claude is instructed via `CLAUDE.md` to propose ADRs when decisions are made.
 
 ## Consequences
+
 - Decisions are discoverable by anyone reading the repo
 - The "why" is preserved alongside the "what", preventing future re-litigation
 - Slightly more overhead per decision, but the record pays for itself quickly

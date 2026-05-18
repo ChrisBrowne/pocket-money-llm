@@ -5,6 +5,7 @@ Concrete examples of application behaviour, expressed as given/when/then sequenc
 Each scenario maps to at least one Playwright e2e test. Happy path scenarios are mandatory coverage; error scenarios verify that the correct user-facing feedback is shown.
 
 **Conventions:**
+
 - Amounts are written in pence (the storage unit) with a pound comment for readability
 - Balances are always derived from the transaction ledger (ADR-0005), never set directly
 - Scenario names use the domain vocabulary from `pocket-money.allium`
@@ -13,7 +14,7 @@ Each scenario maps to at least one Playwright e2e test. Happy path scenarios are
 
 ## Authentication
 
-**Testing note:** E2e tests run with `DEV_MODE=true` and authenticate via `POST /dev/login` (ADR-0028), not Google OAuth. The scenarios below describe the *domain behaviour* — the test implementation uses the dev login endpoint to obtain a session cookie, then asserts the same outcomes.
+**Testing note:** E2e tests run with `DEV_MODE=true` and authenticate via `POST /dev/login` (ADR-0028), not Google OAuth. The scenarios below describe the _domain behaviour_ — the test implementation uses the dev login endpoint to obtain a session cookie, then asserts the same outcomes.
 
 ### AuthorisedParentLogsIn
 

@@ -21,6 +21,7 @@ Every page layout includes a generic error element (e.g. a toast or banner conta
 Application code (handlers, command handlers, domain functions) never catches exceptions for control flow. Domain errors flow through Result types. Only truly unexpected failures reach the catch-all.
 
 ## Consequences
+
 - Clean separation: handlers only deal with `Result<T, E>` for domain cases, never try/catch
 - Every page automatically gets error display capability from the layout
 - A single place (the top-level handler) controls the error UX for unexpected failures

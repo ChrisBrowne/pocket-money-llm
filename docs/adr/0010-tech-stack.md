@@ -17,6 +17,7 @@ The user wants a TypeScript backend with server-rendered templates and lightweig
 - **Styling**: Tailwind CSS (utility-first CSS, integrated via Bun build or CLI)
 
 ## Consequences
+
 - Single language (TypeScript) across the entire stack
 - Bun's built-in SQLite support means no external DB driver dependency
 - TSX templates give compile-time checking of rendered HTML

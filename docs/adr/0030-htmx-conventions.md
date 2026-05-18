@@ -59,7 +59,9 @@ Example response from a deposit handler:
 
 ```html
 <!-- Primary swap: new transaction row prepended to list -->
-<tr id="tx-42" ...>...</tr>
+<tr id="tx-42" ...>
+  ...
+</tr>
 
 <!-- OOB: update balance display -->
 <template>

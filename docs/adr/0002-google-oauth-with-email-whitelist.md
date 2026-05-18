@@ -13,6 +13,7 @@ Only two people (the user and their wife) should be able to access the app. Both
 Use Google OAuth for authentication. Authorisation is a whitelist of email addresses in config (env var `ALLOWED_EMAILS`, see ADR-0018). Any Google account not in the whitelist is rejected at login.
 
 ## Consequences
+
 - No user management UI, password reset flows, or registration needed
 - Adding a third user means updating config and redeploying — acceptable for the foreseeable future
 - Google handles all credential management, MFA, etc.

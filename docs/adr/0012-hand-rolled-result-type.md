@@ -28,6 +28,7 @@ Result types appear at infrastructure boundaries and in command handler return t
 The API surface stays small and the code reads as idiomatic TypeScript — standard `if`/`else` branching on the discriminant, not method chains.
 
 ## Consequences
+
 - Zero dependencies for error handling
 - Every developer (and AI assistant) can read the implementation in seconds
 - Error paths use normal TypeScript control flow (`if (isErr(result)) return ...`)

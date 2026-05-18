@@ -1,19 +1,19 @@
-import { Database } from "bun:sqlite"
+import { Database } from "bun:sqlite";
 
 export function openDatabase(path: string): Database {
-  const db = new Database(path)
+  const db = new Database(path);
 
-  db.run("PRAGMA journal_mode = WAL")
-  db.run("PRAGMA foreign_keys = ON")
-  db.run("PRAGMA busy_timeout = 5000")
-  db.run("PRAGMA synchronous = NORMAL")
+  db.run("PRAGMA journal_mode = WAL");
+  db.run("PRAGMA foreign_keys = ON");
+  db.run("PRAGMA busy_timeout = 5000");
+  db.run("PRAGMA synchronous = NORMAL");
 
   db.run(`
     CREATE TABLE IF NOT EXISTS children (
       name       TEXT PRIMARY KEY,
       created_at TEXT NOT NULL
     )
-  `)
+  `);
 
   db.run(`
     CREATE TABLE IF NOT EXISTS transactions (
@@ -25,7 +25,7 @@ export function openDatabase(path: string): Database {
       recorded_at TEXT    NOT NULL,
       recorded_by TEXT    NOT NULL
     )
-  `)
+  `);
 
-  return db
+  return db;
 }

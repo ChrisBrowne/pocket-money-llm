@@ -13,6 +13,7 @@ The app tracks real money (GBP). Floating-point arithmetic introduces rounding e
 Store all amounts as integer pence (pennies). £5.00 is stored as `500`. All arithmetic operates on integers. Formatting to pounds and pence happens only at the display layer.
 
 ## Consequences
+
 - No floating-point errors — ever
 - Arithmetic is simple integer addition/subtraction
 - The parsed `Amount` type at the boundary converts user input (e.g. "5.00") to pence and rejects invalid values

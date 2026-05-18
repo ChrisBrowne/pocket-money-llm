@@ -10,7 +10,7 @@ If a decision supersedes a previous one, update the old ADR's status to "Superse
 
 ## Git Commits
 
-Commit messages should focus on the *why* of the change, not the *what* — the diff already shows what changed. Include context from the design conversation that isn't obvious from the code alone: which ADR motivated the change, what trade-off was considered, what user need drove it. Reference ADRs by number (e.g. "per ADR-0004") when a commit implements or follows from a recorded decision.
+Commit messages should focus on the _why_ of the change, not the _what_ — the diff already shows what changed. Include context from the design conversation that isn't obvious from the code alone: which ADR motivated the change, what trade-off was considered, what user need drove it. Reference ADRs by number (e.g. "per ADR-0004") when a commit implements or follows from a recorded decision.
 
 ## Allium Specification
 
@@ -40,6 +40,7 @@ Domain logic lives in pure functions — no side effects, no I/O, no dependencie
 Command handlers are the imperative shell — they orchestrate: call domain functions, talk to infrastructure (DB, filesystem), return results. They are thin glue, not a place for business logic.
 
 HTTP handlers are thinner still. Their responsibility is:
+
 1. Parse and validate request params (return error HTML immediately if invalid)
 2. Call the command handler
 3. Pass the result to a TSX view and return the HTML
@@ -70,6 +71,7 @@ Result types live where things can genuinely fail — infrastructure calls (DB q
 Domain functions are pure and return plain values. If inputs are parsed and typed at the boundary, domain computation can't fail — there's nothing to wrap in a Result.
 
 The layering:
+
 - **Infrastructure wrappers** return `Result<T, E>` — they wrap try/catch around calls that genuinely fail
 - **Command handlers** return `Result<T, E>` — they orchestrate infra calls (Results) and domain calls (plain values)
 - **Domain functions** return plain values — pure computation, no failure mode

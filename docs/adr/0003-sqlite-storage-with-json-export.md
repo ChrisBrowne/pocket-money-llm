@@ -15,6 +15,7 @@ JSON files are more transparent (human-readable via `cat`) and trivial on networ
 SQLite for the live application database. JSON for the export/backup format. The export endpoint serialises the full state (children + transaction ledger) to JSON. The daily cron job saves these JSON files to the network share.
 
 ## Consequences
+
 - Live data is crash-safe and queryable
 - Backups are human-readable JSON on the Backblaze-backed network share
 - SQLite WAL mode should be avoided if the DB file itself is on a network mount — keep the DB local to the LXC, only the JSON exports go to the share

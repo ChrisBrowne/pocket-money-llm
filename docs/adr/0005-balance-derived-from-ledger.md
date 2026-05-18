@@ -13,6 +13,7 @@ A child's balance could be stored as a field updated on each transaction, or der
 Balance is derived from the transaction ledger (sum of deposits minus withdrawals). There is no stored balance field.
 
 ## Consequences
+
 - Single source of truth — the ledger is the balance
 - No risk of balance/ledger drift
 - Computation cost is negligible at this scale (handful of kids, few transactions per week)

@@ -15,6 +15,7 @@ For a 2-user app on a private Tailnet, a server-side session store is unnecessar
 Sessions are stateless signed HTTP-only cookies. The cookie contains the authenticated user's email and display name (from the Google profile), signed with a secret key (`COOKIE_SECRET` env var). No backend session store. No expiry — the session lives until the cookie is cleared. The app verifies the signature and checks the email against `allowed_emails` on every request.
 
 ## Consequences
+
 - No session storage infrastructure (no Redis, no sessions table)
 - Stateless — the app can restart without invalidating sessions
 - HTTP-only flag prevents JavaScript access to the cookie (XSS mitigation)

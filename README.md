@@ -65,22 +65,22 @@ make lint        # TypeScript type checking + Prettier check
 
 ### All Makefile targets
 
-| Target | Description |
-|--------|-------------|
-| `make install` | Install dependencies |
-| `make dev` | Start dev server with hot reload + CSS watch |
-| `make build` | Build CSS for production |
-| `make start` | Build and start production server |
-| `make test` | Run unit and integration tests |
-| `make test-unit` | Run unit tests only |
-| `make test-integration` | Run integration tests only |
-| `make test-e2e` | Run Playwright e2e tests |
-| `make lint` | Type check (`tsc --noEmit`) and verify formatting (`prettier --check`) |
-| `make format` | Apply Prettier formatting across the codebase |
-| `make clean` | Remove built CSS, databases, and test artifacts |
-| `make db-reset` | Delete local database files |
-| `make deploy` | Pull, build, and restart on the deploy host (see [deployment.md](docs/deployment.md)) |
-| `make provision` | First-time install of systemd unit, sudoers, and backup cron (deploy host only, root) |
+| Target                  | Description                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `make install`          | Install dependencies                                                                  |
+| `make dev`              | Start dev server with hot reload + CSS watch                                          |
+| `make build`            | Build CSS for production                                                              |
+| `make start`            | Build and start production server                                                     |
+| `make test`             | Run unit and integration tests                                                        |
+| `make test-unit`        | Run unit tests only                                                                   |
+| `make test-integration` | Run integration tests only                                                            |
+| `make test-e2e`         | Run Playwright e2e tests                                                              |
+| `make lint`             | Type check (`tsc --noEmit`) and verify formatting (`prettier --check`)                |
+| `make format`           | Apply Prettier formatting across the codebase                                         |
+| `make clean`            | Remove built CSS, databases, and test artifacts                                       |
+| `make db-reset`         | Delete local database files                                                           |
+| `make deploy`           | Pull, build, and restart on the deploy host (see [deployment.md](docs/deployment.md)) |
+| `make provision`        | First-time install of systemd unit, sudoers, and backup cron (deploy host only, root) |
 
 ## Project Structure
 
