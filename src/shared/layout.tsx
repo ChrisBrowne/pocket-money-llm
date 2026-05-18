@@ -1,5 +1,8 @@
 import { escapeHtml } from "@kitajs/html";
 import type { PropsWithChildren } from "@kitajs/html";
+import { VERSION } from "../version";
+
+const REPO_URL = "https://github.com/ChrisBrowne/pocket-money-tracker";
 
 export function Layout({
   title,
@@ -13,6 +16,11 @@ export function Layout({
     ? `${escapeHtml(title)} — Pocket Money Tracker`
     : "Pocket Money Tracker";
   const safeSessionName = sessionName ? escapeHtml(sessionName) : undefined;
+  const safeVersion = escapeHtml(VERSION);
+  const commitUrl =
+    VERSION === "unknown"
+      ? null
+      : `${REPO_URL}/commit/${encodeURIComponent(VERSION)}`;
 
   return (
     <html lang="en">
@@ -57,6 +65,25 @@ export function Layout({
         </header>
 
         <main class="max-w-lg mx-auto px-4 py-6">{children as "safe"}</main>
+
+        <footer
+          class="text-center text-xs text-gray-400 py-3"
+          data-testid="version-footer"
+        >
+          {commitUrl ? (
+            <a
+              href={commitUrl}
+              class="hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="version"
+            >
+              {safeVersion}
+            </a>
+          ) : (
+            <span data-testid="version">{safeVersion}</span>
+          )}
+        </footer>
 
         <div
           id="global-error"
