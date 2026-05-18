@@ -1,4 +1,4 @@
-.PHONY: install css css-watch dev build start test test-unit test-integration test-e2e lint clean db-reset deploy
+.PHONY: install css css-watch dev build start test test-unit test-integration test-e2e lint clean db-reset deploy install-cron
 
 install:
 	bun install
@@ -45,3 +45,9 @@ deploy:
 	bun install
 	$(MAKE) build
 	sudo systemctl restart pocket-money
+
+install-cron:
+	@[ "$$(id -u)" = "0" ] || { echo "install-cron must be run as root (try: sudo make install-cron)"; exit 1; }
+	install -m 644 scripts/backup.cron /etc/cron.d/pocket-money-backup
+	systemctl reload cron
+	@echo "Installed /etc/cron.d/pocket-money-backup and reloaded cron"
