@@ -1,0 +1,6 @@
+# Sudoers entry for `make deploy` (ADR-0019).
+# Installed to /etc/sudoers.d/pocket-money-deploy by `make install-sudoers`.
+# Grants the pocket-money service user permission to restart its own
+# systemd unit without a password — and nothing else.
+
+pocket-money ALL=(root) NOPASSWD: /bin/systemctl restart pocket-money
