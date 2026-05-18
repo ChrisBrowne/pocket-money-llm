@@ -3,6 +3,19 @@ import { Layout } from "../shared/layout";
 import { formatPence } from "../shared/currency";
 import type { ChildWithBalance } from "./commands";
 
+/**
+ * Children views — Midnight Strip redesign.
+ *
+ * Component shapes, prop interfaces, and every data-testid are preserved
+ * from the previous design; only markup + classes have changed. Handlers
+ * in src/children/handlers.tsx don't need to change.
+ *
+ * Cycle of edge-glow colors for the kid cards: primary → cool → accent.
+ * This is the same rotation the prototype used.
+ */
+
+const CARD_EDGE_CYCLE = ["", "glow-edge-cool", "glow-edge-accent"] as const;
+
 interface HomePageProps {
   sessionName: string;
   children: ChildWithBalance[];
@@ -10,10 +23,51 @@ interface HomePageProps {
 }
 
 export function HomePage({ sessionName, children }: HomePageProps) {
+  const totalPence = children.reduce((sum, c) => sum + c.balance, 0);
   return (
     <Layout sessionName={sessionName}>
+      <VaultHero
+        kidCount={children.length}
+        totalPence={totalPence}
+        operatorName={sessionName}
+      />
       <ChildrenList children={children} />
     </Layout>
+  );
+}
+
+interface VaultHeroProps {
+  kidCount: number;
+  totalPence: number;
+  operatorName: string;
+}
+
+function VaultHero({ kidCount, totalPence, operatorName }: VaultHeroProps) {
+  const safeTotal = escapeHtml(formatPence(totalPence));
+  const safeOperator = escapeHtml(operatorName);
+  return (
+    <section class="text-center mb-8" data-testid="vault-hero">
+      <p class="font-mono text-[10px] tracking-[0.24em] uppercase text-dim">
+        Vault Total
+      </p>
+      <p
+        data-testid="vault-total"
+        class="font-display text-[3.5rem] leading-none mt-2 text-cool glow-cool tabular-nums tracking-wider strip-pulse"
+      >
+        {safeTotal}
+      </p>
+      <p class="text-sm text-dim mt-3 leading-tight">
+        {kidCount === 0 ? (
+          "no kids yet · add your first below"
+        ) : (
+          <>
+            across{" "}
+            <span class="text-primary font-bold">{String(kidCount)}</span>{" "}
+            {kidCount === 1 ? "kid" : "kids"} · welcome back, {safeOperator}
+          </>
+        )}
+      </p>
+    </section>
   );
 }
 
@@ -29,45 +83,67 @@ export function AddChildPage({ sessionName, error, value }: AddChildPageProps) {
 
   return (
     <Layout title="Add child" sessionName={sessionName}>
-      <h1 class="text-2xl font-bold text-gray-800 mb-6">Add a child</h1>
+      <div class="mb-6">
+        <a
+          href="/"
+          class="font-ui text-xs font-semibold tracking-[0.12em] uppercase text-cool no-underline"
+        >
+          ← back
+        </a>
+      </div>
 
-      <form
-        method="post"
-        action="/children"
-        data-testid="add-child-form"
-        class="flex flex-col gap-3"
-      >
-        <input
-          type="text"
-          name="name"
-          placeholder="Child's name"
-          required
-          value={safeValue}
-          data-testid="add-child-input"
-          class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        {safeError && (
-          <p data-testid="add-child-error" class="text-sm text-red-600">
-            {safeError}
-          </p>
-        )}
-        <div class="flex gap-2">
-          <button
-            type="submit"
-            data-testid="add-child-button"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Add Child
-          </button>
-          <a
-            href="/"
-            data-testid="add-child-cancel"
-            class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors no-underline"
-          >
-            Cancel
-          </a>
-        </div>
-      </form>
+      <h1 class="font-display text-[2.5rem] leading-none tracking-[0.12em] text-accent glow-accent flicker mb-4">
+        New Kid
+      </h1>
+      <p class="text-sm text-dim mb-7 leading-relaxed">
+        Add a child to your family vault. They'll start with a balance of £0.00.
+      </p>
+
+      <div class="strip-card glow-edge-accent mb-6">
+        <form
+          method="post"
+          action="/children"
+          data-testid="add-child-form"
+          class="flex flex-col gap-3"
+        >
+          <label class="block">
+            <span class="neon-input-label is-accent">child's name</span>
+            <input
+              type="text"
+              name="name"
+              placeholder="e.g. Elizabeth"
+              required
+              value={safeValue}
+              data-testid="add-child-input"
+              class="neon-input is-accent is-display"
+            />
+          </label>
+          {safeError && (
+            <p
+              data-testid="add-child-error"
+              class="font-mono text-[10px] tracking-wide text-danger pl-1"
+            >
+              ↳ {safeError}
+            </p>
+          )}
+          <div class="flex flex-col gap-2 mt-2">
+            <button
+              type="submit"
+              data-testid="add-child-button"
+              class="neon-pill is-accent is-full"
+            >
+              Add Kid ↗
+            </button>
+            <a
+              href="/"
+              data-testid="add-child-cancel"
+              class="text-center py-3 font-ui text-xs font-semibold tracking-[0.16em] uppercase text-dim no-underline"
+            >
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
     </Layout>
   );
 }
@@ -81,49 +157,106 @@ export function ChildrenList({ children }: ChildrenListProps) {
     return <EmptyState />;
   }
   return (
-    <div class="flex flex-col gap-3" data-testid="children-list">
-      {children.map((child) => (
-        <ChildCard child={child} />
-      ))}
-    </div>
+    <>
+      <div class="mb-3 px-1" data-testid="children-list-header">
+        <span class="font-alt text-sm tracking-[0.32em] lowercase text-primary glow-primary flicker">
+          ↡ kids
+        </span>
+      </div>
+      <div class="flex flex-col gap-4" data-testid="children-list">
+        {children.map((child, idx) => (
+          <ChildCard child={child} index={idx} />
+        ))}
+      </div>
+    </>
   );
 }
 
 export function EmptyState() {
   return (
-    <p data-testid="empty-state" class="text-gray-500 text-sm py-8 text-center">
-      No children yet. Open the menu to add one.
-    </p>
+    <div
+      data-testid="empty-state"
+      class="text-center px-6 py-9 rounded-[18px] mt-2"
+      style="border: 1.5px dashed rgb(255 46 147 / 0.5); background: linear-gradient(135deg, rgb(255 46 147 / 0.07), transparent 70%); box-shadow: 0 0 20px rgb(255 46 147 / 0.25);"
+    >
+      <p class="font-display text-[1.75rem] leading-none tracking-[0.12em] text-primary glow-primary flicker mb-3">
+        Empty vault
+      </p>
+      <p class="text-sm text-dim mb-6 leading-relaxed max-w-[16rem] mx-auto">
+        Add a child to start tracking their pocket money. Each kid gets their
+        own balance and ledger.
+      </p>
+      <a href="/add-child" data-testid="empty-state-add" class="neon-pill">
+        + Add the first kid
+      </a>
+    </div>
   );
 }
 
 interface ChildCardProps {
   child: ChildWithBalance;
+  index?: number;
 }
 
-export function ChildCard({ child }: ChildCardProps) {
+/**
+ * ChildCard — a kid's row on the home list. The leading character of the
+ * name renders as a glowing monogram orb (avatar-free, no images to manage).
+ * Edge glow rotates through the CARD_EDGE_CYCLE so a 3-kid family reads as
+ * three distinct lights — pink, cyan, violet.
+ *
+ * Negative balances are styled in the danger color via the .glow-danger class
+ * and a `text-danger` utility — matches the old red treatment but in palette.
+ */
+export function ChildCard({ child, index = 0 }: ChildCardProps) {
   const safeName = escapeHtml(child.name);
   const safeBalance = escapeHtml(formatPence(child.balance));
-  const balanceColor = child.balance < 0 ? "text-red-600" : "text-green-700";
+  const negative = child.balance < 0;
+  const edge = CARD_EDGE_CYCLE[index % CARD_EDGE_CYCLE.length];
+  // Map the rotation to the matching balance text class/glow.
+  const balanceTone = negative
+    ? "text-danger glow-danger"
+    : edge === "glow-edge-cool"
+      ? "text-cool glow-cool"
+      : edge === "glow-edge-accent"
+        ? "text-accent glow-accent"
+        : "text-primary glow-primary";
+  const orbColor =
+    edge === "glow-edge-cool"
+      ? "var(--color-cool)"
+      : edge === "glow-edge-accent"
+        ? "var(--color-accent)"
+        : "var(--color-primary)";
 
   return (
     <a
       href={`/children/${encodeURIComponent(child.name)}`}
       data-testid={`child-card-${safeName}`}
-      class="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all no-underline"
+      class={`strip-card ${edge} flex items-center gap-4 no-underline`}
     >
-      <span
-        data-testid={`child-name-${safeName}`}
-        class="text-xl font-medium text-gray-800"
+      <div
+        aria-hidden="true"
+        class="w-[52px] h-[52px] rounded-full shrink-0 flex items-center justify-center font-display text-[1.375rem] text-ink"
+        style={`background: radial-gradient(circle at 35% 30%, ${orbColor}, color-mix(in srgb, ${orbColor} 33%, transparent) 60%, transparent 75%); box-shadow: 0 0 18px ${orbColor}, inset 0 0 12px color-mix(in srgb, ${orbColor} 67%, transparent);`}
       >
-        {safeName}
-      </span>
-      <span
+        {escapeHtml(child.name.charAt(0))}
+      </div>
+      <div class="flex-1 min-w-0">
+        <p
+          data-testid={`child-name-${safeName}`}
+          class="font-ui text-[1.1875rem] font-semibold text-ink tracking-tight leading-tight truncate"
+        >
+          {safeName}
+        </p>
+        <p class="font-mono text-[10px] tracking-[0.16em] uppercase text-dim mt-1">
+          tap to manage →
+        </p>
+      </div>
+      <div
         data-testid={`child-balance-${safeName}`}
-        class={`text-xl font-mono font-semibold ${balanceColor}`}
+        class={`font-display text-[1.875rem] leading-none tabular-nums tracking-wide text-right ${balanceTone}`}
       >
         {safeBalance}
-      </span>
+      </div>
     </a>
   );
 }

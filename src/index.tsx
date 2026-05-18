@@ -57,7 +57,7 @@ const app = new Elysia()
       "Unhandled error",
     );
     return new Response(
-      `<template><div id="global-error" hx-swap-oob="true"><div class="bg-red-50 border border-red-200 rounded-md p-4 shadow-lg"><p class="text-sm text-red-700">Something went wrong. Please try again.</p></div></div></template>`,
+      `<template><div id="global-error" data-testid="global-error" class="fixed bottom-4 left-4 right-4 max-w-lg mx-auto z-50" hx-swap-oob="true"><div class="strip-error"><p class="font-ui text-sm text-ink leading-relaxed">Something went wrong. Please try again.</p></div></div></template>`,
       {
         status: 200,
         headers: { "content-type": "text/html" },

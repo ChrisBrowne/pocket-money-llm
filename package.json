@@ -17,6 +17,10 @@
   "dependencies": {
     "@elysiajs/html": "^1.4.0",
     "@elysiajs/static": "^1.4.7",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/outfit": "^5.2.8",
+    "@fontsource/major-mono-display": "^5.2.8",
+    "@fontsource/monoton": "^5.2.7",
     "elysia": "^1.4.28",
     "pino": "^10.3.1",
     "zod": "^4.3.6"

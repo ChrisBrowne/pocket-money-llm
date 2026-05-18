@@ -1,1 +1,693 @@
+/**
+ * input.css — Tailwind v4 entry. Pocket Money "Midnight Strip" redesign.
+ *
+ * - @theme registers design tokens (colors, fonts) so they're available as
+ *   Tailwind utilities (text-primary, font-display, etc.)
+ * - @layer base sets body baseline + a couple of helpers
+ * - @layer components is the design system: glow, glass card, pill, input,
+ *   and the sun-grid backdrop. Components are favored over arbitrary-value
+ *   utilities because the multi-stop shadows are too gnarly to inline.
+ *
+ * Build:  make css         (or: bunx @tailwindcss/cli -i src/styles/input.css -o public/styles.css --minify)
+ * Watch:  make css-watch
+ */
+
 @import "tailwindcss";
+
+/* Self-hosted fonts. The woff2 files are sourced from the @fontsource and
+   @fontsource-variable npm packages, then copied into public/fonts/ at build
+   time by `make fonts` (which `make css` depends on). No runtime fetch from
+   third-party CDNs. Subsets: latin everywhere; latin-ext on body fonts only
+   (Outfit + JetBrains Mono) so kids with accented names render correctly.
+   The display fonts (Monoton + Major Mono Display) only render strings under
+   our own control, so latin alone is enough. */
+
+@font-face {
+  font-family: "Monoton";
+  src: url("/fonts/monoton-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Major Mono Display";
+  src: url("/fonts/major-mono-display-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Outfit Variable";
+  src: url("/fonts/outfit-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Outfit Variable";
+  src: url("/fonts/outfit-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  src: url("/fonts/jetbrains-mono-latin-wght-normal.woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  src: url("/fonts/jetbrains-mono-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   DESIGN TOKENS — registered with Tailwind so they back utilities
+   like text-primary, bg-bg, border-cool, font-display.
+   ────────────────────────────────────────────────────────────── */
+@theme {
+  /* Palette — Midnight Strip / Hot */
+  --color-bg-deep: #03000c;
+  --color-bg: #08001a;
+  --color-bg-soft: #0c0033;
+  --color-bg-rise: #1a0040;
+  --color-ink: #f4ecff;
+  --color-dim: rgb(244 236 255 / 0.62);
+  --color-very-dim: rgb(244 236 255 / 0.32);
+
+  --color-primary: #ff2e93; /* hot pink — headings, primary actions */
+  --color-accent: #b537f2; /* violet — secondary headings, child name */
+  --color-cool: #00e0ff; /* ice cyan — deposit, info, balances */
+  --color-warn: #ffb13b; /* sunset amber — warnings, last-export */
+  --color-danger: #ff506a; /* destructive actions and errors */
+
+  /* Fonts. The Variable suffixes match the @font-face family names emitted by
+     @fontsource-variable/* packages. Non-variable fallbacks listed for the
+     case where a developer has a system-installed copy without the suffix. */
+  --font-display: "Monoton", "Outfit Variable", "Outfit", system-ui, sans-serif;
+  --font-alt: "Major Mono Display", "Monoton", monospace;
+  --font-ui: "Outfit Variable", "Outfit", system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   BASE — body baseline, focus reset (we draw our own rings).
+   ────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  *:focus {
+    outline: none;
+  }
+
+  /* No browser-default focus ring inside <button> text — neon-pill draws its own. */
+  button {
+    font-family: inherit;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   COMPONENTS — the design system. Use these in TSX views by class
+   name; reach for ad-hoc Tailwind utilities for layout/spacing only.
+   ────────────────────────────────────────────────────────────── */
+@layer components {
+  /* ─── neon glow text-shadow stacks ─────────────────────────── */
+  .glow-primary {
+    text-shadow:
+      0 0 4px var(--color-primary),
+      0 0 14px var(--color-primary),
+      0 0 34px rgb(255 46 147 / 0.6);
+  }
+  .glow-accent {
+    text-shadow:
+      0 0 4px var(--color-accent),
+      0 0 14px var(--color-accent),
+      0 0 34px rgb(181 55 242 / 0.6);
+  }
+  .glow-cool {
+    text-shadow:
+      0 0 4px var(--color-cool),
+      0 0 14px var(--color-cool),
+      0 0 34px rgb(0 224 255 / 0.6);
+  }
+  .glow-warn {
+    text-shadow:
+      0 0 4px var(--color-warn),
+      0 0 10px var(--color-warn),
+      0 0 22px rgb(255 177 59 / 0.6);
+  }
+  .glow-danger {
+    text-shadow:
+      0 0 4px var(--color-danger),
+      0 0 14px var(--color-danger),
+      0 0 34px rgb(255 80 106 / 0.6);
+  }
+
+  /* Neon "tube" flicker. Apply alongside glow-* for the broken-sign look. */
+  @keyframes neon-flicker {
+    0%,
+    19.999%,
+    22%,
+    62.999%,
+    64%,
+    64.999%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    21.999%,
+    63%,
+    63.999%,
+    65%,
+    69.999% {
+      opacity: 0.55;
+    }
+  }
+  .flicker {
+    animation: neon-flicker 6.5s infinite alternate;
+  }
+
+  /* Big balance numbers breathe gently. */
+  @keyframes strip-pulse {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.18);
+    }
+  }
+  .strip-pulse {
+    animation: strip-pulse 3.2s ease-in-out infinite;
+  }
+
+  /* ─── glass card ───────────────────────────────────────────
+     Edge glow color is controlled by .glow-edge-* modifier — default
+     is primary (hot pink). The ::before pseudo-element draws the
+     gradient border ring via the WebKit mask-composite trick. */
+  .strip-card {
+    --card-glow: var(--color-primary);
+    --card-glow-rgb: 255 46 147;
+    position: relative;
+    border-radius: 1.125rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: linear-gradient(
+      135deg,
+      rgb(181 55 242 / 0.15),
+      rgb(255 46 147 / 0.05) 60%,
+      rgb(0 224 255 / 0.05)
+    );
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 0 28px rgb(var(--card-glow-rgb) / 0.25),
+      0 0 60px rgb(var(--card-glow-rgb) / 0.12);
+    padding: 1.125rem;
+  }
+  .strip-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: 1.125rem;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      var(--card-glow),
+      transparent 40%,
+      color-mix(in srgb, var(--color-cool) 60%, transparent)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  .strip-card.glow-edge-cool {
+    --card-glow: var(--color-cool);
+    --card-glow-rgb: 0 224 255;
+  }
+  .strip-card.glow-edge-accent {
+    --card-glow: var(--color-accent);
+    --card-glow-rgb: 181 55 242;
+  }
+  .strip-card.glow-edge-warn {
+    --card-glow: var(--color-warn);
+    --card-glow-rgb: 255 177 59;
+  }
+  .strip-card.glow-edge-danger {
+    --card-glow: var(--color-danger);
+    --card-glow-rgb: 255 80 106;
+  }
+
+  /* ─── neon pill button ──────────────────────────────────── */
+  .neon-pill {
+    --pill-color: var(--color-primary);
+    --pill-color-rgb: 255 46 147;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 0.875rem 1.375rem;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--pill-color);
+    background: linear-gradient(
+      135deg,
+      rgb(var(--pill-color-rgb) / 0.13),
+      transparent 70%
+    );
+    border: 1.5px solid var(--pill-color);
+    box-shadow:
+      0 0 14px rgb(var(--pill-color-rgb) / 0.7),
+      inset 0 0 10px rgb(var(--pill-color-rgb) / 0.33);
+    cursor: pointer;
+    transition:
+      transform 0.12s,
+      box-shadow 0.12s;
+    text-decoration: none;
+  }
+  .neon-pill:hover {
+    box-shadow:
+      0 0 20px rgb(var(--pill-color-rgb) / 0.85),
+      inset 0 0 12px rgb(var(--pill-color-rgb) / 0.4);
+  }
+  .neon-pill:active {
+    transform: scale(0.97);
+  }
+  .neon-pill:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .neon-pill.is-cool {
+    --pill-color: var(--color-cool);
+    --pill-color-rgb: 0 224 255;
+  }
+  .neon-pill.is-accent {
+    --pill-color: var(--color-accent);
+    --pill-color-rgb: 181 55 242;
+  }
+  .neon-pill.is-warn {
+    --pill-color: var(--color-warn);
+    --pill-color-rgb: 255 177 59;
+  }
+  .neon-pill.is-danger {
+    --pill-color: var(--color-danger);
+    --pill-color-rgb: 255 80 106;
+  }
+  .neon-pill.is-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.6875rem;
+  }
+  .neon-pill.is-full {
+    display: flex;
+    width: 100%;
+  }
+
+  /* ─── icon button (the menu/exit chrome) ───────────────── */
+  .neon-icon-btn {
+    --icon-color: var(--color-primary);
+    --icon-color-rgb: 255 46 147;
+    width: 2.375rem;
+    height: 2.375rem;
+    border-radius: 9999px;
+    background: rgb(var(--icon-color-rgb) / 0.12);
+    border: 1px solid rgb(var(--icon-color-rgb) / 0.5);
+    box-shadow: 0 0 12px rgb(var(--icon-color-rgb) / 0.65);
+    color: var(--icon-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: box-shadow 0.12s;
+  }
+  .neon-icon-btn:hover {
+    box-shadow: 0 0 18px rgb(var(--icon-color-rgb) / 0.85);
+  }
+  .neon-icon-btn.is-cool {
+    --icon-color: var(--color-cool);
+    --icon-color-rgb: 0 224 255;
+  }
+
+  /* ─── neon input ────────────────────────────────────────── */
+  .neon-input {
+    --ring-color: var(--color-cool);
+    --ring-color-rgb: 0 224 255;
+    width: 100%;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    background: rgb(0 0 0 / 0.45);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    color: var(--color-ink);
+    font-family: var(--font-ui);
+    font-size: 1.0625rem;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .neon-input::placeholder {
+    color: var(--color-very-dim);
+  }
+  .neon-input:focus {
+    border-color: var(--ring-color);
+    box-shadow:
+      0 0 14px rgb(var(--ring-color-rgb) / 0.7),
+      inset 0 0 20px rgb(var(--ring-color-rgb) / 0.15);
+  }
+  .neon-input.is-primary {
+    --ring-color: var(--color-primary);
+    --ring-color-rgb: 255 46 147;
+  }
+  .neon-input.is-accent {
+    --ring-color: var(--color-accent);
+    --ring-color-rgb: 181 55 242;
+  }
+  .neon-input.is-display {
+    font-family: var(--font-display);
+    font-size: 1.625rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+  }
+
+  .neon-input-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-cool);
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+  }
+  .neon-input-label.is-primary {
+    color: var(--color-primary);
+  }
+  .neon-input-label.is-accent {
+    color: var(--color-accent);
+  }
+
+  /* ─── file input ──────────────────────────────────────────
+     The native <input type="file"> chrome is restyled via
+     ::file-selector-button (supported everywhere modern). Wraps both
+     the button and the "No file chosen" text in a glass-look pill. */
+  .neon-file-input {
+    width: 100%;
+    border-radius: 0.875rem;
+    padding: 0.625rem 0.875rem;
+    background: rgb(255 46 147 / 0.05);
+    border: 1.5px dashed rgb(255 46 147 / 0.55);
+    color: var(--color-dim);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .neon-file-input::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-primary);
+    background: rgb(255 46 147 / 0.12);
+    color: var(--color-primary);
+    box-shadow: 0 0 12px rgb(255 46 147 / 0.5);
+    font-family: var(--font-ui);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .neon-file-input::file-selector-button:hover {
+    box-shadow: 0 0 16px rgb(255 46 147 / 0.8);
+  }
+
+  /* ─── warning callout (the amber "Heads up" block on restore) */
+  .strip-warn {
+    position: relative;
+    border-radius: 0.875rem;
+    border: 1.5px solid var(--color-warn);
+    background: linear-gradient(
+      135deg,
+      rgb(255 177 59 / 0.16),
+      rgb(255 46 147 / 0.08)
+    );
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 16px rgb(255 177 59 / 0.5);
+    padding: 0.875rem 1rem 0.875rem 3.125rem;
+    color: var(--color-ink);
+    line-height: 1.5;
+    font-size: 0.8125rem;
+  }
+  .strip-warn::before {
+    content: "!";
+    position: absolute;
+    left: 0.875rem;
+    top: 0.875rem;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 9999px;
+    background: var(--color-warn);
+    color: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    box-shadow: 0 0 10px var(--color-warn);
+  }
+
+  /* ─── error callout (the red glass block for restore-error etc) */
+  .strip-error {
+    border-radius: 0.875rem;
+    border: 1.5px solid var(--color-danger);
+    background: rgb(255 80 106 / 0.08);
+    box-shadow: 0 0 18px rgb(255 80 106 / 0.4);
+    padding: 0.875rem 1rem;
+    color: var(--color-ink);
+  }
+
+  /* ─── side-drawer menu chrome ───────────────────────────── */
+  .strip-menu {
+    background: linear-gradient(
+      160deg,
+      var(--color-bg-rise) 0%,
+      var(--color-bg) 70%
+    );
+    border-right: 1.5px solid var(--color-primary);
+    box-shadow: 0 0 50px rgb(255 46 147 / 0.8);
+  }
+  .strip-menu-item {
+    --item-color: var(--color-cool);
+    --item-color-rgb: 0 224 255;
+    display: block;
+    border-radius: 0.875rem;
+    padding: 0.875rem 1rem;
+    background: linear-gradient(
+      135deg,
+      rgb(var(--item-color-rgb) / 0.15),
+      transparent 70%
+    );
+    border: 1px solid rgb(var(--item-color-rgb) / 0.4);
+    box-shadow: 0 0 14px rgb(var(--item-color-rgb) / 0.4);
+    text-decoration: none;
+  }
+  .strip-menu-item:hover {
+    box-shadow: 0 0 18px rgb(var(--item-color-rgb) / 0.6);
+  }
+  .strip-menu-item.is-accent {
+    --item-color: var(--color-accent);
+    --item-color-rgb: 181 55 242;
+  }
+
+  /* ─── sun-grid backdrop ─────────────────────────────────────
+     Mount as the first child of <body>; it sits at z-index:-1
+     so all content paints over it. Compositionally five layers:
+     sky gradient, horizon line, sun + bands, stars, perspective grid. */
+  .strip-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--color-bg-rise) 0%,
+      var(--color-bg-soft) 30%,
+      var(--color-bg) 55%,
+      var(--color-bg-deep) 100%
+    );
+  }
+  .strip-backdrop .horizon {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 52%;
+    height: 4px;
+    background: var(--color-primary);
+    box-shadow:
+      0 0 30px var(--color-primary),
+      0 0 70px rgb(255 46 147 / 0.6);
+  }
+  .strip-backdrop .sun {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    transform: translate(-50%, 0);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 40%,
+      #ffe273,
+      #ffb13b 35%,
+      var(--color-primary) 70%,
+      transparent 78%
+    );
+    opacity: 0.92;
+  }
+  .strip-backdrop .sun-bands {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    transform: translate(-50%, 0);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0 18px,
+      color-mix(in srgb, var(--color-bg) 95%, transparent) 18px 24px
+    );
+    -webkit-mask-image: radial-gradient(
+      circle at 50% 40%,
+      #000 65%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(circle at 50% 40%, #000 65%, transparent 78%);
+    mix-blend-mode: multiply;
+  }
+  .strip-backdrop .stars {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 8%, #fff, transparent),
+      radial-gradient(1px 1px at 30% 14%, rgb(255 255 255 / 0.7), transparent),
+      radial-gradient(1px 1px at 56% 5%, #fff, transparent),
+      radial-gradient(1px 1px at 78% 18%, rgb(255 255 255 / 0.7), transparent),
+      radial-gradient(1px 1px at 88% 6%, #fff, transparent),
+      radial-gradient(1px 1px at 6% 22%, rgb(255 255 255 / 0.65), transparent),
+      radial-gradient(1px 1px at 42% 26%, #fff, transparent),
+      radial-gradient(1px 1px at 68% 32%, rgb(255 255 255 / 0.5), transparent),
+      radial-gradient(1px 1px at 18% 38%, rgb(255 255 255 / 0.55), transparent),
+      radial-gradient(1px 1px at 92% 40%, rgb(255 255 255 / 0.7), transparent);
+  }
+  .strip-backdrop .grid-floor {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 52%;
+    bottom: 0;
+    perspective: 280px;
+    overflow: hidden;
+  }
+  .strip-backdrop .grid-floor::before {
+    content: "";
+    position: absolute;
+    inset: 0 -40% -40% -40%;
+    transform-origin: top center;
+    transform: rotateX(58deg);
+    background-image:
+      linear-gradient(
+        to right,
+        transparent 0,
+        rgb(0 224 255 / 0.65) 1px,
+        transparent 1.5px
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0,
+        rgb(0 224 255 / 0.65) 1px,
+        transparent 1.5px
+      );
+    background-size:
+      40px 40px,
+      100% 40px;
+    filter: drop-shadow(0 0 4px rgb(0 224 255 / 0.65));
+    animation: strip-grid-scroll 1.6s linear infinite;
+  }
+  .strip-backdrop .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 50%,
+      rgb(0 0 0 / 0.55) 100%
+    );
+  }
+  @keyframes strip-grid-scroll {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 0 40px;
+    }
+  }
+
+  /* Respect reduced motion — kill flicker, pulse, and grid scroll. */
+  @media (prefers-reduced-motion: reduce) {
+    .flicker,
+    .strip-pulse,
+    .strip-backdrop .grid-floor::before {
+      animation: none;
+    }
+  }
+}

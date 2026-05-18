@@ -266,8 +266,11 @@ actor BackupAgent {
 surface Home {
     facing viewer: AuthorisedParent
 
+    let vault_total = Children.sum(c => c.balance)
+
     exposes:
         viewer.name
+        vault_total
         for child in Children:
             child.name
             child.balance
@@ -284,6 +287,14 @@ surface Home {
     @guidance
         -- Balances are displayed as formatted currency (e.g. "£5.00"),
         -- not raw pence. Formatting is a view-layer concern.
+        --
+        -- vault_total is a derived view, not a stored value: it is the sum
+        -- of balance across Children, recomputed on read. Like individual
+        -- balances it is in pence (ADR-0014); the view layer formats it as
+        -- currency. It exists for the Home "Vault Total" hero display and
+        -- has no other consumers — every other surface works in terms of a
+        -- single child's balance. The kid count shown alongside the total
+        -- ("across N kids") is just Children.count rendered by the view.
         --
         -- A navigation menu (rendered as layout chrome on every authenticated
         -- surface) provides links to AddChild and Backup. The setup-flavoured

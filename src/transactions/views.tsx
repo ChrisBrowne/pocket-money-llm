@@ -5,6 +5,31 @@ import { formatTransactionTime } from "../shared/datetime";
 import type { ChildWithBalance } from "../children/commands";
 import type { TransactionRow } from "./commands";
 
+/**
+ * Transaction views — Midnight Strip redesign.
+ *
+ * Critical contracts preserved from the previous design (handlers.tsx
+ * relies on these and Playwright tests target them):
+ *
+ *   • <BalanceDisplay balance={n} oob={bool}/>
+ *       — id="balance-display", data-testid="balance-display"
+ *       — when oob=true, sets hx-swap-oob="true" so the handler can OOB-swap
+ *         a fresh balance after a transaction posts.
+ *
+ *   • <TransactionItem tx={...}/>
+ *       — must render as a standalone bordered card; the deposit/withdraw
+ *         POST returns it bare (no parent), and htmx prepends it into
+ *         #transaction-list via hx-swap="afterbegin".
+ *
+ *   • <TransactionError formId="deposit-errors"/withdraw-errors"/>
+ *       — id={formId}, data-testid={formId}, hx-swap-oob="true" — replaces
+ *         the matching error <div> in the form when validation fails.
+ *
+ *   • The deposit/withdraw form ids, inputs (name=amount, name=note),
+ *     hx-post URLs, hx-target="#transaction-list", and hx-swap="afterbegin"
+ *     are unchanged.
+ */
+
 interface ChildDetailPageProps {
   sessionName: string;
   child: ChildWithBalance;
@@ -25,86 +50,113 @@ export function ChildDetailPage({
       <div class="mb-6">
         <a
           href="/"
-          class="text-sm text-gray-500 hover:text-gray-700 no-underline"
+          class="font-ui text-xs font-semibold tracking-[0.12em] uppercase text-cool no-underline"
         >
-          &larr; Back
+          ← back
         </a>
       </div>
 
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">{safeName}</h1>
+      <div class="text-center mb-7">
+        <h1
+          class="font-display text-[2.375rem] leading-none tracking-[0.12em] text-accent glow-accent flicker"
+          data-testid="child-name-display"
+        >
+          {safeName}
+        </h1>
+        <p class="font-mono text-[10px] tracking-[0.24em] uppercase text-dim mt-4">
+          available balance
+        </p>
         <BalanceDisplay balance={child.balance} />
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 class="text-sm font-medium text-gray-500 mb-3">Deposit</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-7">
+        {/* DEPOSIT */}
+        <div class="strip-card glow-edge-cool">
+          <h2 class="font-ui text-[13px] font-bold tracking-[0.16em] uppercase text-cool mb-4">
+            ↑ Deposit
+          </h2>
           <div id="deposit-errors" data-testid="deposit-errors"></div>
           <form
             hx-post={`/children/${encodeURIComponent(child.name)}/deposit`}
             hx-target="#transaction-list"
             hx-swap="afterbegin"
             data-testid="deposit-form"
-            class="flex flex-col gap-2"
+            class="flex flex-col gap-3"
           >
-            <input
-              type="number"
-              name="amount"
-              step="0.01"
-              min="0.01"
-              value="2.00"
-              required
-              data-testid="deposit-amount"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            <input
-              type="text"
-              name="note"
-              value={escapeHtml(defaultNote)}
-              data-testid="deposit-note"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+            <label class="block">
+              <span class="neon-input-label">amount</span>
+              <input
+                type="number"
+                name="amount"
+                step="0.01"
+                min="0.01"
+                value="2.00"
+                required
+                data-testid="deposit-amount"
+                class="neon-input is-display"
+              />
+            </label>
+            <label class="block">
+              <span class="neon-input-label">note</span>
+              <input
+                type="text"
+                name="note"
+                value={escapeHtml(defaultNote)}
+                placeholder="e.g. weekly pocket money"
+                data-testid="deposit-note"
+                class="neon-input"
+              />
+            </label>
             <button
               type="submit"
               data-testid="deposit-button"
-              class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors cursor-pointer"
+              class="neon-pill is-cool is-full mt-1"
             >
               Deposit
             </button>
           </form>
         </div>
 
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 class="text-sm font-medium text-gray-500 mb-3">Withdraw</h2>
+        {/* WITHDRAW */}
+        <div class="strip-card">
+          <h2 class="font-ui text-[13px] font-bold tracking-[0.16em] uppercase text-primary mb-4">
+            ↓ Withdraw
+          </h2>
           <div id="withdraw-errors" data-testid="withdraw-errors"></div>
           <form
             hx-post={`/children/${encodeURIComponent(child.name)}/withdraw`}
             hx-target="#transaction-list"
             hx-swap="afterbegin"
             data-testid="withdraw-form"
-            class="flex flex-col gap-2"
+            class="flex flex-col gap-3"
           >
-            <input
-              type="number"
-              name="amount"
-              step="0.01"
-              min="0.01"
-              placeholder="Amount (£)"
-              required
-              data-testid="withdraw-amount"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
-            <input
-              type="text"
-              name="note"
-              placeholder="Note (optional)"
-              data-testid="withdraw-note"
-              class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
+            <label class="block">
+              <span class="neon-input-label is-primary">amount</span>
+              <input
+                type="number"
+                name="amount"
+                step="0.01"
+                min="0.01"
+                placeholder="£0.00"
+                required
+                data-testid="withdraw-amount"
+                class="neon-input is-primary is-display"
+              />
+            </label>
+            <label class="block">
+              <span class="neon-input-label is-primary">note</span>
+              <input
+                type="text"
+                name="note"
+                placeholder="e.g. ice cream"
+                data-testid="withdraw-note"
+                class="neon-input is-primary"
+              />
+            </label>
             <button
               type="submit"
               data-testid="withdraw-button"
-              class="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors cursor-pointer"
+              class="neon-pill is-full mt-1"
             >
               Withdraw
             </button>
@@ -112,37 +164,51 @@ export function ChildDetailPage({
         </div>
       </div>
 
-      <div class="mb-6">
-        <h2 class="text-sm font-medium text-gray-500 mb-3">Transactions</h2>
+      <div class="mb-7">
+        <h2 class="font-alt text-sm tracking-[0.32em] lowercase text-accent glow-accent flicker mb-4 px-1">
+          ↡ transactions
+        </h2>
         <div
           id="transaction-list"
           data-testid="transaction-list"
-          class="flex flex-col gap-2"
+          class="flex flex-col gap-2.5"
         >
+          {transactions.length === 0 && (
+            <div
+              data-testid="tx-empty-state"
+              class="text-center py-6 px-4 rounded-[14px] border border-dashed border-white/10 font-mono text-[11px] tracking-wide text-very-dim"
+            >
+              no transactions yet
+            </div>
+          )}
           {transactions.map((tx) => (
             <TransactionItem tx={tx} />
           ))}
         </div>
       </div>
 
-      <div class="pt-6 border-t border-gray-200">
-        <form
-          hx-delete={`/children/${encodeURIComponent(child.name)}`}
-          data-testid="remove-child-form"
+      <form
+        hx-delete={`/children/${encodeURIComponent(child.name)}`}
+        data-testid="remove-child-form"
+        class="m-0"
+      >
+        <button
+          type="submit"
+          data-testid="remove-child-button"
+          class="neon-pill is-danger is-full"
         >
-          <button
-            type="submit"
-            data-testid="remove-child-button"
-            class="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
-          >
-            Remove {safeName}
-          </button>
-        </form>
-      </div>
+          Remove {safeName}
+        </button>
+      </form>
     </Layout>
   );
 }
 
+/**
+ * BalanceDisplay — also OOB-swapped after every deposit/withdraw so the
+ * header updates without a full re-render. The .strip-pulse class gives
+ * the number a gentle brightness oscillation for the "live" feel.
+ */
 export function BalanceDisplay({
   balance,
   oob,
@@ -151,12 +217,15 @@ export function BalanceDisplay({
   oob?: boolean;
 }) {
   const safeBalance = escapeHtml(formatPence(balance));
-  const balanceColor = balance < 0 ? "text-red-600" : "text-green-700";
+  const negative = balance < 0;
+  const tone = negative
+    ? "text-danger glow-danger"
+    : "text-primary glow-primary";
   return (
     <div
       id="balance-display"
       data-testid="balance-display"
-      class={`text-3xl font-mono font-bold ${balanceColor}`}
+      class={`font-display text-[4.5rem] leading-none mt-2 tabular-nums tracking-wider strip-pulse ${tone}`}
       hx-swap-oob={oob ? "true" : undefined}
     >
       {safeBalance}
@@ -164,43 +233,55 @@ export function BalanceDisplay({
   );
 }
 
+/**
+ * TransactionItem — single row in the ledger. Rendered standalone when
+ * appended via htmx (deposit/withdraw response), or in a loop on initial
+ * page load. Glass card with edge-glow keyed to deposit (cool) vs
+ * withdrawal (primary).
+ */
 export function TransactionItem({ tx }: { tx: TransactionRow }) {
   const safeNote = escapeHtml(tx.note);
   const safeAmount = escapeHtml(formatPence(tx.amount));
   const safeRecordedBy = escapeHtml(tx.recordedBy);
   const safeKind = escapeHtml(tx.kind);
   const isDeposit = tx.kind === "deposit";
-  const kindColor = isDeposit
-    ? "text-green-700 bg-green-50"
-    : "text-orange-700 bg-orange-50";
-  const amountPrefix = isDeposit ? "+" : "-";
+  const edge = isDeposit ? "glow-edge-cool" : "";
+  const tone = isDeposit ? "text-cool glow-cool" : "text-primary glow-primary";
+  const badgeTone = isDeposit
+    ? "text-cool border-cool"
+    : "text-primary border-primary";
+  const amountPrefix = isDeposit ? "+" : "−";
 
   return (
     <div
       data-testid={`transaction-${tx.id}`}
-      class="flex flex-col gap-1 p-3 bg-white rounded-lg border border-gray-200 text-sm"
+      class={`strip-card ${edge}`}
+      style="padding: 0.75rem 0.875rem; border-radius: 0.875rem;"
     >
-      <div class="flex items-center gap-3">
+      <div class="flex items-center justify-between mb-1.5">
         <span
           data-testid={`tx-kind-${tx.id}`}
-          class={`px-2 py-0.5 rounded text-xs font-medium ${kindColor}`}
+          class={`font-mono text-[9px] tracking-[0.16em] uppercase px-2 py-0.5 rounded-full border ${badgeTone}`}
         >
           {safeKind}
         </span>
         <span
           data-testid={`tx-amount-${tx.id}`}
-          class={`font-mono font-semibold ${isDeposit ? "text-green-700" : "text-orange-700"}`}
+          class={`font-display text-[1.625rem] leading-none tabular-nums ${tone}`}
         >
           {amountPrefix}
           {safeAmount}
         </span>
-        <span data-testid={`tx-note-${tx.id}`} class="text-gray-600 flex-1">
-          {safeNote}
-        </span>
       </div>
-      <div class="flex items-center gap-3 text-xs text-gray-400">
+      <p
+        data-testid={`tx-note-${tx.id}`}
+        class="font-ui text-[13px] text-ink mb-1"
+      >
+        {safeNote}
+      </p>
+      <div class="flex items-center justify-between font-mono text-[9px] tracking-wide text-dim">
         <span data-testid={`tx-recorded-by-${tx.id}`}>{safeRecordedBy}</span>
-        <span data-testid={`tx-recorded-at-${tx.id}`} class="ml-auto">
+        <span data-testid={`tx-recorded-at-${tx.id}`}>
           {escapeHtml(formatTransactionTime(tx.recordedAt))}
         </span>
       </div>
@@ -208,6 +289,11 @@ export function TransactionItem({ tx }: { tx: TransactionRow }) {
   );
 }
 
+/**
+ * TransactionError — OOB-swapped into the deposit/withdraw form's error
+ * <div> when the handler returns a Result.err. Keep the wrapper id matching
+ * `formId` so htmx can find its target.
+ */
 export function TransactionError({
   formId,
   message,
@@ -218,8 +304,11 @@ export function TransactionError({
   const safeMessage = escapeHtml(message);
   return (
     <div id={formId} hx-swap-oob="true" data-testid={formId}>
-      <p data-testid={`${formId}-message`} class="text-sm text-red-600 mb-2">
-        {safeMessage}
+      <p
+        data-testid={`${formId}-message`}
+        class="font-mono text-[10px] tracking-wide text-danger pl-1 mb-2"
+      >
+        ↳ {safeMessage}
       </p>
     </div>
   );

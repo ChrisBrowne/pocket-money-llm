@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (amended by ADR-0038 — empty-state CTA carve-out)
 
 ## Context
 
@@ -52,3 +52,15 @@ Future setup-flavoured features (settings, parent management, etc.) follow this 
 - The Allium spec lost some content from Home and gained two new surfaces. ADR-0030 (HTMX conventions) is unaffected: HTMX still powers transaction handling on ChildDetail; the AddChild page just uses plain HTML form submission, which is appropriate for its no-partial-swap nature.
 - The browser's HTML5 form `required` attribute prevents fully-empty submissions on the AddChild input. Whitespace-only names (" ") still reach the server, where `parseChildName` rejects them — both layers stay correct.
 - One Playwright e2e quirk discovered: a `fixed inset-0 bg-black/40` element confuses Playwright's actionability checks (the backdrop is reported as "outside the viewport" for click purposes). The MenuCloseButtonDismissesMenu test covers the close-via-button path; backdrop-tap-to-dismiss works in the browser but isn't covered by an e2e test. If this becomes a real correctness concern later, options include switching to programmatic event dispatch in the test, or using a `<button>` element styled as a backdrop overlay.
+
+## Amendment (ADR-0038)
+
+ADR-0038's visual redesign reintroduces a single AddChild CTA on the Home empty state: when the children list is empty, a neon "Add the first kid" pill links directly to `/add-child` from the Home content area.
+
+This is a deliberate, narrowly-scoped carve-out:
+
+- The CTA appears **only** when there are zero children — i.e. on first run, before the menu has any purpose other than this one action.
+- Once any child exists, the CTA disappears and the menu is the sole path to AddChild, exactly as this ADR specifies.
+- The populated Home stays clean: no `+ new` shortcut, no inline form. The original "noise on the day-to-day view" concern is preserved.
+
+In other words, ADR-0037's principle holds for steady-state Home; the empty state is a one-off bootstrap moment where pointing the user at the menu added friction without value. The menu still exists, still works, and still hosts AddChild on every authenticated surface.
