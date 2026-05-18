@@ -60,7 +60,7 @@ You'll see a dev login page — click your email to log in.
 ```sh
 make test        # unit + integration tests
 make test-e2e    # Playwright end-to-end tests
-make lint        # TypeScript type checking
+make lint        # TypeScript type checking + Prettier check
 ```
 
 ### All Makefile targets
@@ -75,7 +75,8 @@ make lint        # TypeScript type checking
 | `make test-unit` | Run unit tests only |
 | `make test-integration` | Run integration tests only |
 | `make test-e2e` | Run Playwright e2e tests |
-| `make lint` | Type check with `tsc --noEmit` |
+| `make lint` | Type check (`tsc --noEmit`) and verify formatting (`prettier --check`) |
+| `make format` | Apply Prettier formatting across the codebase |
 | `make clean` | Remove built CSS, databases, and test artifacts |
 | `make db-reset` | Delete local database files |
 | `make deploy` | Pull, build, and restart on the deploy host (see [deployment.md](docs/deployment.md)) |

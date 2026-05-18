@@ -1,4 +1,4 @@
-.PHONY: install css css-watch dev build start test test-unit test-integration test-e2e lint clean db-reset deploy provision install-systemd-unit install-sudoers install-cron
+.PHONY: install css css-watch dev build start test test-unit test-integration test-e2e lint format clean db-reset deploy provision install-systemd-unit install-sudoers install-cron
 
 install:
 	bun install
@@ -30,6 +30,10 @@ test-e2e:
 
 lint:
 	bunx tsc --noEmit
+	bunx prettier --check .
+
+format:
+	bunx prettier --write .
 
 clean:
 	rm -f public/styles.css

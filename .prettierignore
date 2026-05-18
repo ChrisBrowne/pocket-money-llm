@@ -1,0 +1,6 @@
+node_modules
+public/styles.css
+public/htmx.min.js
+data/
+test-results/
+bun.lock
