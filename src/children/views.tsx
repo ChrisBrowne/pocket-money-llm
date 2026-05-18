@@ -260,3 +260,108 @@ export function ChildCard({ child, index = 0 }: ChildCardProps) {
     </a>
   );
 }
+
+interface ConfirmRemovePageProps {
+  sessionName: string;
+  child: ChildWithBalance;
+  transactionCount: number;
+}
+
+export function ConfirmRemovePage({
+  sessionName,
+  child,
+  transactionCount,
+}: ConfirmRemovePageProps) {
+  const safeName = escapeHtml(child.name);
+  const safeBalance = escapeHtml(formatPence(child.balance));
+  const safeCount = String(transactionCount);
+  const encodedName = encodeURIComponent(child.name);
+  const transactionsWord =
+    transactionCount === 1 ? "transaction" : "transactions";
+
+  return (
+    <Layout title={`Remove ${child.name}`} sessionName={sessionName}>
+      <div class="mb-6">
+        <a
+          href={`/children/${encodedName}`}
+          class="font-ui text-cool text-xs font-semibold tracking-[0.12em] uppercase no-underline"
+        >
+          ← back
+        </a>
+      </div>
+
+      <h1 class="font-display text-accent glow-accent flicker mb-1 text-[2rem] leading-none tracking-[0.12em]">
+        Remove
+      </h1>
+      <h1
+        class="font-display text-danger glow-danger mb-6 text-[2.5rem] leading-none tracking-[0.12em]"
+        data-testid="confirm-remove-child-name"
+      >
+        {safeName}
+      </h1>
+
+      <div
+        data-testid="confirm-remove-summary"
+        class="strip-card glow-edge-danger mb-4"
+      >
+        <p class="font-mono text-dim mb-4 text-[10px] tracking-[0.16em] uppercase">
+          About to delete
+        </p>
+        <div class="flex flex-col gap-3.5">
+          <div class="flex items-baseline justify-between gap-3">
+            <span class="font-mono text-dim text-[11px] tracking-[0.12em] uppercase">
+              Balance
+            </span>
+            <strong
+              data-testid="confirm-remove-balance"
+              class="font-display text-cool glow-cool text-right text-[1.875rem] leading-none tracking-[0.06em] tabular-nums"
+            >
+              {safeBalance}
+            </strong>
+          </div>
+          <div class="flex items-baseline justify-between gap-3">
+            <span class="font-mono text-dim text-[11px] tracking-[0.12em] uppercase">
+              Transactions
+            </span>
+            <strong
+              data-testid="confirm-remove-transaction-count"
+              class="font-display text-primary glow-primary text-right text-[1.875rem] leading-none tracking-[0.06em] tabular-nums"
+            >
+              {safeCount}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="strip-warn mb-6" data-testid="confirm-remove-warning">
+        <strong class="text-warn block text-[11px] font-bold tracking-[0.12em] uppercase">
+          Heads up
+        </strong>
+        This permanently deletes {safeName} and all {safeCount}{" "}
+        {transactionsWord}. It cannot be undone.
+      </div>
+
+      <form
+        method="post"
+        action={`/children/${encodedName}/remove`}
+        data-testid="confirm-remove-form"
+        class="m-0 flex flex-col gap-3"
+      >
+        <button
+          type="submit"
+          data-testid="confirm-remove-button"
+          class="neon-pill is-danger is-full"
+        >
+          Remove {safeName} forever
+        </button>
+        <a
+          href={`/children/${encodedName}`}
+          data-testid="confirm-remove-cancel"
+          class="font-ui text-dim text-center text-xs font-semibold tracking-[0.16em] uppercase no-underline py-3"
+        >
+          Cancel
+        </a>
+      </form>
+    </Layout>
+  );
+}

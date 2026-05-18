@@ -3,9 +3,11 @@ import type { Database } from "bun:sqlite";
 import type { Config } from "../config";
 import { sessionMiddleware } from "../auth/session-middleware";
 import { parseChildName } from "../shared/types";
-import { isErr } from "../shared/result";
+import { isErr, isNone } from "../shared/result";
 import { addChild, removeChild, listChildren } from "./commands";
-import { HomePage, AddChildPage } from "./views";
+import { getChildDetail } from "../transactions/commands";
+import { HomePage, AddChildPage, ConfirmRemovePage } from "./views";
+import { Layout } from "../shared/layout";
 
 export function childrenHandlers(db: Database, config: Config) {
   return new Elysia({ name: "children-handlers" })
@@ -52,15 +54,46 @@ export function childrenHandlers(db: Database, config: Config) {
       set.headers["location"] = "/";
       return "";
     })
-    .delete("/children/:name", ({ params, set }) => {
+    .get("/children/:name/remove", ({ params, session, set }) => {
       const parsed = parseChildName(decodeURIComponent(params.name));
       if (isErr(parsed)) {
-        set.status = 200;
-        return "Invalid child name";
+        set.status = 404;
+        return (
+          <Layout title="Not Found" sessionName={session.name}>
+            <p class="text-dim">Child not found.</p>
+          </Layout>
+        );
+      }
+
+      const detail = getChildDetail(db, parsed.value);
+      if (isNone(detail)) {
+        set.status = 404;
+        return (
+          <Layout title="Not Found" sessionName={session.name}>
+            <p class="text-dim">Child not found.</p>
+          </Layout>
+        );
+      }
+
+      return (
+        <ConfirmRemovePage
+          sessionName={session.name}
+          child={detail.value.child}
+          transactionCount={detail.value.transactions.length}
+        />
+      );
+    })
+    .post("/children/:name/remove", ({ params, set }) => {
+      const parsed = parseChildName(decodeURIComponent(params.name));
+      if (isErr(parsed)) {
+        set.status = 302;
+        set.headers["location"] = "/";
+        return "";
       }
 
       removeChild(db, parsed.value);
-      set.headers["hx-redirect"] = "/";
+      set.status = 302;
+      set.headers["location"] = "/";
       return "";
     });
 }

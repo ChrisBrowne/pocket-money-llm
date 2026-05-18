@@ -193,6 +193,8 @@ test.describe("Child Detail — Removing a Child", () => {
     await depositTo(page, "Bob", "5.00");
     await page.goto("/children/Bob");
     await page.getByTestId("remove-child-button").click();
+    await page.waitForURL("/children/Bob/remove");
+    await page.getByTestId("confirm-remove-button").click();
     await page.waitForURL("/");
     await expect(page.getByTestId("child-card-Bob")).not.toBeVisible();
   });
@@ -201,6 +203,8 @@ test.describe("Child Detail — Removing a Child", () => {
     await addChild(page, "Boob"); // typo
     await page.goto("/children/Boob");
     await page.getByTestId("remove-child-button").click();
+    await page.waitForURL("/children/Boob/remove");
+    await page.getByTestId("confirm-remove-button").click();
     await page.waitForURL("/");
     await expect(page.getByTestId("child-card-Boob")).not.toBeVisible();
   });
@@ -210,8 +214,43 @@ test.describe("Child Detail — Removing a Child", () => {
     await withdrawFrom(page, "Bob", "3.00", "advance");
     await page.goto("/children/Bob");
     await page.getByTestId("remove-child-button").click();
+    await page.waitForURL("/children/Bob/remove");
+    await page.getByTestId("confirm-remove-button").click();
     await page.waitForURL("/");
     await expect(page.getByTestId("child-card-Bob")).not.toBeVisible();
+  });
+
+  test("RemoveChildConfirmPageShowsSummary", async ({ page }) => {
+    await addChild(page, "Alice");
+    await depositTo(page, "Alice", "5.00");
+    await depositTo(page, "Alice", "2.50");
+    await withdrawFrom(page, "Alice", "1.00", "sweets");
+    await page.goto("/children/Alice");
+    await page.getByTestId("remove-child-button").click();
+    await page.waitForURL("/children/Alice/remove");
+    await expect(page.getByTestId("confirm-remove-child-name")).toHaveText(
+      "Alice",
+    );
+    await expect(page.getByTestId("confirm-remove-balance")).toHaveText(
+      "£6.50",
+    );
+    await expect(
+      page.getByTestId("confirm-remove-transaction-count"),
+    ).toHaveText("3");
+    await expect(page.getByTestId("confirm-remove-warning")).toBeVisible();
+  });
+
+  test("RemoveChildCancelReturnsToChildDetail", async ({ page }) => {
+    await addChild(page, "Alice");
+    await depositTo(page, "Alice", "5.00");
+    await page.goto("/children/Alice");
+    await page.getByTestId("remove-child-button").click();
+    await page.waitForURL("/children/Alice/remove");
+    await page.getByTestId("confirm-remove-cancel").click();
+    await page.waitForURL("/children/Alice");
+    // Alice should still exist
+    await page.goto("/");
+    await expect(page.getByTestId("child-card-Alice")).toBeVisible();
   });
 });
 

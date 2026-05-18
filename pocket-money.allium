@@ -362,7 +362,9 @@ surface ChildDetail {
     provides:
         ParentDeposits(viewer, child, amount, note default config.default_note)
         ParentWithdraws(viewer, child, amount, note)
-        ParentRemovesChild(viewer, child)
+
+    related:
+        ConfirmRemoveChild(child)
 
     @guidance
         -- Transactions are displayed newest-first (reverse chronological),
@@ -370,6 +372,41 @@ surface ChildDetail {
         -- All transactions are shown — no pagination in v1.
         -- recorded_by displays the raw email address. No attempt to
         -- resolve it to a display name — the email is the stable identifier.
+        -- Removing a child is a destructive action: ChildDetail does not
+        -- execute it directly. The Remove button navigates to
+        -- ConfirmRemoveChild, which is where ParentRemovesChild is provided.
+}
+
+surface ConfirmRemoveChild {
+    facing viewer: AuthorisedParent
+
+    context child: Child
+
+    let transaction_count = child.transactions.count
+
+    exposes:
+        child.name
+        child.balance
+        transaction_count
+
+    provides:
+        ParentRemovesChild(viewer, child)
+
+    related:
+        ChildDetail(child)
+
+    @guidance
+        -- A dedicated confirmation surface for the destructive remove-child
+        -- action (analogous to the Restore Backup two-step flow on Backup).
+        -- Mirrors the principle that anything irreversible deserves a
+        -- distinct surface that makes the parent stop and look at the
+        -- consequences before committing.
+        --
+        -- The surface shows the child's current balance and total
+        -- transaction count alongside a "this cannot be undone" warning.
+        -- On confirm, ParentRemovesChild fires and the parent is returned
+        -- to Home. On cancel, the parent returns to ChildDetail without
+        -- side effects.
 }
 
 surface BackupApi {

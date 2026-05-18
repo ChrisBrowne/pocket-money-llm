@@ -187,19 +187,13 @@ export function ChildDetailPage({
         </div>
       </div>
 
-      <form
-        hx-delete={`/children/${encodeURIComponent(child.name)}`}
-        data-testid="remove-child-form"
-        class="m-0"
+      <a
+        href={`/children/${encodeURIComponent(child.name)}/remove`}
+        data-testid="remove-child-button"
+        class="neon-pill is-danger is-full no-underline"
       >
-        <button
-          type="submit"
-          data-testid="remove-child-button"
-          class="neon-pill is-danger is-full"
-        >
-          Remove {safeName}
-        </button>
-      </form>
+        Remove {safeName}
+      </a>
     </Layout>
   );
 }
